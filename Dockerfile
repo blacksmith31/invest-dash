@@ -1,5 +1,9 @@
 FROM python:3.11
 
+RUN apt-get update -y
+RUN apt-get install -y tzdata
+ENV TZ=America/New_York
+
 EXPOSE 9090
 
 ENV PYTHONDONTWRITEBYTECODE=1
