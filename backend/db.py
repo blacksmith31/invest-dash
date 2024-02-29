@@ -187,6 +187,14 @@ def update_sroc_many(data: list[dict]) -> None:
         return None
 
 
+def prune_data(min_ts: int) -> None:
+    with con:
+        con.execute("""
+                    DELETE FROM ticker_history
+                    WHERE timestamp < ?
+                    """, [min_ts])
+        return None
+
 if __name__ == "__main__":
     # drop_eod_table()
     # create_eod_table()

@@ -6,7 +6,7 @@ import polars as pl
 import random
 import time
 
-from backend.db import get_ticker, get_ticker_latest, update_close_many, update_sroc_many
+from backend.db import get_ticker, get_ticker_latest, prune_data, update_close_many, update_sroc_many
 from backend.yfi import get_days_history
 
 
@@ -48,11 +48,12 @@ def update():
         sroc_data = calc_sroc(ticker)
         update_sroc_many(sroc_data)
 
-        # prune data
-
         sleep_time = random.randrange(1, 10)
         logger.info(f"sleep: {sleep_time}")
         time.sleep(sleep_time)
+
+    # prune data
+    prune_data(int(min_ts))    
 
 
 def get_tickerslice(all_tickers: list) -> list:
