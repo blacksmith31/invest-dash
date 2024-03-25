@@ -1,8 +1,9 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-import fastapi
-from fastapi import Request
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -17,11 +18,23 @@ from backend.updater import update
 logging.basicConfig()
 logging.getLogger('apscheduler').setLevel(logging.DEBUG)
 
-app = fastapi.FastAPI()
-app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
 BASE_PATH = Path(__file__).resolve().parent
 templates = Jinja2Blocks(directory=str(BASE_PATH / "frontend/templates"))
 templates.env.filters["from_json"] = from_json
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    scheduler = BackgroundScheduler()
+    trigger = CronTrigger(year='*', month='*', day='*',
+                          day_of_week='mon-fri', hour='21',
+                          minute='55', timezone="US/Eastern")
+    scheduler.add_job(update, trigger=trigger, name="Updater")
+    scheduler.start()
+    yield
+    # do stuff at shutdown here
+    
+app = FastAPI(lifespan=lifespan)
+app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
 
 origins = ["*"]
 app.add_middleware(
@@ -31,16 +44,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"]
 )
-
-
-@app.on_event("startup")
-def startup():
-    scheduler = BackgroundScheduler()
-    trigger = CronTrigger(year='*', month='*', day='*',
-                          day_of_week='mon-fri', hour='21',
-                          minute='55', timezone="US/Eastern")
-    scheduler.add_job(update, trigger=trigger, name="Updater")
-    scheduler.start()
+#@app.on_event("startup")
+#def startup():
+    #scheduler = BackgroundScheduler()
+    #trigger = CronTrigger(year='*', month='*', day='*',
+    #                      day_of_week='mon-fri', hour='21',
+    #                      minute='55', timezone="US/Eastern")
+    #scheduler.add_job(update, trigger=trigger, name="Updater")
+    #scheduler.start()
 
 
 @app.get("/", status_code=200, response_class=HTMLResponse)
