@@ -54,6 +54,7 @@ def update():
 
     # prune data
     prune_data(int(min_ts))    
+    logger.info(f"successfully pruned data older than {int(min_ts)}")
 
 
 def get_tickerslice(all_tickers: list) -> list:
