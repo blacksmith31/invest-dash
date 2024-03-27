@@ -1,16 +1,12 @@
 import sqlite3
 
-
 con = sqlite3.connect("./data/scraper.db", check_same_thread=False)
-
 
 def dict_factory(cursor, row):
     fields = [column[0] for column in cursor.description]
     return {key: value for key, value in zip(fields, row)}
 
-
 con.row_factory = dict_factory
-
 
 with con:
     con.execute("""
@@ -21,8 +17,21 @@ with con:
                     sroc NUMERIC,
                     UNIQUE(timestamp, ticker)
                 )
-            """)
+            """
+    )
 
+    con.execute("""
+                CREATE TABLE IF NOT EXISTS symbol_hdr (
+                    symbol TEXT,
+                    name TEXT,
+                    mktcap NUMERIC,
+                    country TEXT,
+                    industry TEXT,
+                    sector TEXT,
+                    UNIQUE(SYMBOL)
+                )
+            """
+    ) 
 
 def drop_table(name: str):
     try:
@@ -193,6 +202,27 @@ def prune_data(min_ts: int) -> None:
                     DELETE FROM ticker_history
                     WHERE timestamp < ?
                     """, [min_ts])
+        return None
+
+def insert_update_sym_hdr(data: list[dict]) -> None:
+    with con:
+        con.executemany("""
+            INSERT OR REPLACE INTO symbol_hdr (
+                    symbol,
+                    name,
+                    mktcap,
+                    country,
+                    industry,
+                    sector
+            ) VALUES (
+                    :symbol,
+                    :name,
+                    :marketCap,
+                    :country,
+                    :industry,
+                    :sector
+            )
+        """, data)
         return None
 
 if __name__ == "__main__":

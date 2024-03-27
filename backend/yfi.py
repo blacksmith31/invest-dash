@@ -7,6 +7,12 @@ _BASE_URL_ = 'https://query2.finance.yahoo.com'
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
 
 
+def get_days_history(ticker: str, days: int) -> list[tuple]:
+    daystr = str(days) + 'd'
+    data = _daily_close_history(ticker, period=daystr)
+    return data
+
+
 def _daily_close_history(ticker:str, period:str='', interval:str='1d', 
             start:int=0, end:int=0, timeout:int=10) -> List[Tuple]:
     """
@@ -73,12 +79,6 @@ def _daily_close_history(ticker:str, period:str='', interval:str='1d',
         return []
 
     return list(zip(timestamps, [ticker] * len(timestamps), closes))
-
-
-def get_days_history(ticker: str, days: int) -> list[tuple]:
-    daystr = str(days) + 'd'
-    data = _daily_close_history(ticker, period=daystr)
-    return data
 
 
 def main():
