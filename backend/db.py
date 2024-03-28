@@ -225,6 +225,19 @@ def insert_update_sym_hdr(data: list[dict]) -> None:
         """, data)
         return None
 
+def top_n_symbols(n: int = 1000):
+    try:
+        with con:
+            result = con.execute("""
+                                 SELECT symbol
+                                 FROM symbol_hdr
+                                 ORDER BY mktcap
+                                 LIMIT ?
+                                 """, [n]).fetchall()
+            return result
+    except:
+        raise
+
 if __name__ == "__main__":
     # drop_eod_table()
     # create_eod_table()
