@@ -28,6 +28,9 @@ with con:
                     country TEXT,
                     industry TEXT,
                     sector TEXT,
+                    track INTEGER,
+                    own INTEGER,
+                    prev_position INTEGER,
                     UNIQUE(SYMBOL)
                 )
             """
@@ -207,7 +210,7 @@ def prune_data(min_ts: int) -> None:
 def insert_update_sym_hdr(data: list[dict]) -> None:
     with con:
         con.executemany("""
-            INSERT OR REPLACE INTO symbol_hdr (
+            INSERT INTO symbol_hdr (
                     symbol,
                     name,
                     mktcap,
@@ -221,7 +224,8 @@ def insert_update_sym_hdr(data: list[dict]) -> None:
                     :country,
                     :industry,
                     :sector
-            )
+            ) ON CONFLICT(symbol) DO UPDATE
+            SET mktcap = excluded.mktcap
         """, data)
         return None
 
@@ -235,6 +239,18 @@ def top_n_symbols(n: int = 1000):
                                  LIMIT ?
                                  """, [n]).fetchall()
             return result
+    except:
+        raise
+
+def update_prev_pos():
+    try:
+        with con:
+            con.execute("""
+                        update symbol_hdr
+                        set prev_position = curr.top
+                        from (select symbol, row_number() over(order by mktcap desc) as top from symbol_hdr) as curr
+                        where symbol_hdr.symbol = curr.symbol;
+                        """)
     except:
         raise
 

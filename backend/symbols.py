@@ -1,5 +1,5 @@
 import requests
-from db import insert_update_sym_hdr
+from db import insert_update_sym_hdr, update_prev_pos
 
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
 
@@ -45,7 +45,16 @@ def main():
     toins = prep_syms(syms)
     insert_update_sym_hdr(toins)
 
+def test():
+    # update previous position
+    update_prev_pos()
+    # update new mktcap
+    syms = get_symbols()
+    toins = prep_syms(syms[:5])
+    toins[0]["marketCap"] = 999999999
+    insert_update_sym_hdr(toins)
+    # update tracked status
 
 if __name__ == "__main__":
-    main()
+    test()
 
