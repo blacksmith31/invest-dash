@@ -266,11 +266,22 @@ def update_tracked(n: int):
                         update symbol_hdr
                         set track = 1
                             from (select symbol, row_number() over(order by mktcap desc) as top from symbol_hdr) as curr
-                        where symbol_hdr.symbol = curr.symbol and 
-                            curr.top <= ? 
+                        where symbol_hdr.symbol = curr.symbol and (
+                            curr.top <= ? or symbol_hdr.own = 1)
                         """, [n])
     except:
         raise
+
+def toggle_own(symbol: str):
+    with con:
+        con.execute("""
+                    update symbol_hdr
+                    set own = CASE own
+                        WHEN 1 THEN 0
+                        ELSE 1
+                        END
+                    WHERE symbol = ?;
+                    """, [symbol])
 
 if __name__ == "__main__":
     # drop_eod_table()

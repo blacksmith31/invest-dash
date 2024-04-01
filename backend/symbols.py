@@ -1,5 +1,5 @@
 import requests
-from db import insert_update_sym_hdr, update_prev_pos, update_tracked
+from db import insert_update_sym_hdr, toggle_own, update_prev_pos, update_tracked
 
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
 
@@ -53,6 +53,7 @@ def test():
     toins = prep_syms(syms[:5])
     toins[0]["marketCap"] = 999999999
     insert_update_sym_hdr(toins)
+    #toggle_own("AE")
     # update tracked status
     update_tracked(3)
 
