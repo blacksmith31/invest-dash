@@ -1,5 +1,5 @@
 import requests
-from db import insert_update_sym_hdr, update_prev_pos
+from db import insert_update_sym_hdr, update_prev_pos, update_tracked
 
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
 
@@ -54,6 +54,7 @@ def test():
     toins[0]["marketCap"] = 999999999
     insert_update_sym_hdr(toins)
     # update tracked status
+    update_tracked(3)
 
 if __name__ == "__main__":
     test()

@@ -254,6 +254,24 @@ def update_prev_pos():
     except:
         raise
 
+def update_tracked(n: int):
+    try:
+        with con:
+            con.execute("""
+                        update symbol_hdr
+                        set track = 0
+                        where own = 0 or own is null
+                        """)
+            con.execute("""
+                        update symbol_hdr
+                        set track = 1
+                            from (select symbol, row_number() over(order by mktcap desc) as top from symbol_hdr) as curr
+                        where symbol_hdr.symbol = curr.symbol and 
+                            curr.top <= ? 
+                        """, [n])
+    except:
+        raise
+
 if __name__ == "__main__":
     # drop_eod_table()
     # create_eod_table()
