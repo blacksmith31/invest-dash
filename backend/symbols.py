@@ -40,10 +40,15 @@ def prep_syms(syms: list[dict]):
             continue
     return updated
 
-def main():
+def symbol_update():
+    # update previous position
+    update_prev_pos()
+    # update new mktcap
     syms = get_symbols()
     toins = prep_syms(syms)
     insert_update_sym_hdr(toins)
+    # update tracked status
+    update_tracked(1000)
 
 def test():
     # update previous position

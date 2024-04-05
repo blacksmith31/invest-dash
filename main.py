@@ -14,6 +14,7 @@ from pathlib import Path
 from backend import db
 from backend.helpers import from_json, ts_to_str, score_round
 from backend.updater import update
+from backend.symbols import symbol_update
 
 logging.basicConfig()
 logging.getLogger('apscheduler').setLevel(logging.DEBUG)
@@ -28,7 +29,11 @@ async def lifespan(app: FastAPI):
     trigger = CronTrigger(year='*', month='*', day='*',
                           day_of_week='mon-fri', hour='21',
                           minute='55', timezone="US/Eastern")
+    symbol_trigger = CronTrigger(year='*', month='*', day='*',
+                                 day_of_week='sat', hour='5',
+                                 minute='0', timezone="US/Eastern")
     scheduler.add_job(update, trigger=trigger, name="Updater")
+    scheduler.add_job(symbol_update, trigger=symbol_trigger, name="SymbolUpdate")
     scheduler.start()
     yield
     # do stuff at shutdown here
