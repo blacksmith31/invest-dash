@@ -30,7 +30,7 @@ async def lifespan(app: FastAPI):
                           day_of_week='mon-fri', hour='21',
                           minute='55', timezone="US/Eastern")
     symbol_trigger = CronTrigger(year='*', month='*', day='*',
-                                 day_of_week='sat', hour='5',
+                                 day_of_week='sun', hour='5',
                                  minute='0', timezone="US/Eastern")
     scheduler.add_job(update, trigger=trigger, name="Updater")
     scheduler.add_job(symbol_update, trigger=symbol_trigger, name="SymbolUpdate")
@@ -49,14 +49,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"]
 )
-#@app.on_event("startup")
-#def startup():
-    #scheduler = BackgroundScheduler()
-    #trigger = CronTrigger(year='*', month='*', day='*',
-    #                      day_of_week='mon-fri', hour='21',
-    #                      minute='55', timezone="US/Eastern")
-    #scheduler.add_job(update, trigger=trigger, name="Updater")
-    #scheduler.start()
 
 
 @app.get("/", status_code=200, response_class=HTMLResponse)
@@ -106,6 +98,12 @@ def chart_data2(request: Request, ticker: str = ''):
     return templates.TemplateResponse("chart2.html",
                                       context)
 
+@app.get("/symbol_hdr", status_code=200, response_class=HTMLResponse)
+def symbol_hdr(request: Request):
+    data = db.view_symbol_hdr()
+    context = {"request": request,
+               "data": data}
+    return templates.TemplateResponse("view_symbol_hdr.html", context)
 
 @app.get("/tickers")
 def get_tickers():

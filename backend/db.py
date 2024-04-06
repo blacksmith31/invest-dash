@@ -242,6 +242,20 @@ def top_n_symbols(n: int = 1000):
     except:
         raise
 
+def view_symbol_hdr():
+    with con:
+        result = con.execute("""
+            SELECT symbol,
+                   name,
+                   mktcap,
+                   country,
+                   industry,
+                   sector,
+                   row_number() over(order by mktcap desc) mktcap_rank
+            FROM symbol_hdr
+            """).fetchall()
+        return result
+
 def update_prev_pos():
     try:
         with con:
@@ -268,7 +282,7 @@ def update_tracked(n: int):
                             from (select symbol, row_number() over(order by mktcap desc) as top from symbol_hdr) as curr
                         where symbol_hdr.symbol = curr.symbol and (
                             curr.top <= ? or symbol_hdr.own = 1)
-                        """, [n])
+                       """, [n])
     except:
         raise
 

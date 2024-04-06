@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+
+<html lang="en">
+	<head>
+		<meta charstet="utf-8">	
+		<meta name="viewport" content="initial-scale=1, width=device-width">
+		<link rel="stylesheet" href="static/css/grid.css">
+		<script src="https://unpkg.com/htmx.org@1.9.6" integrity="sha384-FhXw7b6AlE/jyjlZH5iHa/tTe9EpJ1Y55RjcgPbjeWMskSxZt1v9qkxLJWNJaGni" crossorigin="anonymous"></script>
+		<!-- <script src="static/js/history.js" type="text/javascript"></script> -->
+		<title>Symbol Header</title>
+	</head>
+	<body>
+		<div style="height:20px"></div>
+        <div class="table-container">
+            {% block table %}
+            <div class="table">
+                <div class="row7 tblhdr">
+                    <div class="rhdr">Symbol</div>
+                    <div class="rhdr">Name</div>
+                    <div class="rhdr">Market Cap</div>
+                    <div class="rhdr">Country</div>
+                    <div class="rhdr">Industry</div>
+                    <div class="rhdr">Sector</div>
+                    <div class="rhdr">MktCap Rank</div>
+                </div>
+                {% for row in data %}
+                <div class="row7 rhover">
+                    <div class="rdata">{{ row.symbol }}</div>
+                    <div class="rdata">{{ row.name }}</div>
+                    <div class="rdata">{{ row.mktcap }}</div>
+                    <div class="rdata">{{ row.country }}</div>
+                    <div class="rdata">{{ row.industry }}</div>
+                    <div class="rdata">{{ row.sector }}</div>
+                    <div class="rdata">{{ row.mktcap_rank }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endblock %}
+        </div>
+	</body>
+</html>

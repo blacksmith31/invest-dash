@@ -38,6 +38,11 @@ body {
     grid-template-columns: minmax(180px, 225px) minmax(80px, 100px) minmax(65px, 175px);
 }
 
+.row7 {
+    display: grid;
+    grid-template-columns: 60px 100px 1fr 1fr 1fr 1fr 1fr;
+}
+
 .rhover {
     border-radius: 4px;
     background-color: rgba(255, 255, 255, 0.07);
