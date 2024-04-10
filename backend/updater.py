@@ -6,12 +6,12 @@ import polars as pl
 import random
 import time
 
-from backend.db import get_ticker, get_ticker_latest, prune_data, update_close_many, update_sroc_many
+from backend.db import get_ticker, get_ticker_latest, prune_data, top_n_symbols, update_close_many, update_sroc_many
 from backend.yfi import get_days_history
 
 
-BASE_PATH = Path(__file__).resolve().cwd()
-TICKER_PATH = BASE_PATH / "top_1000_symbols.csv"
+# BASE_PATH = Path(__file__).resolve().cwd()
+# TICKER_PATH = BASE_PATH / "top_1000_symbols.csv"
 
 EVAL_DAYS = 90
 QUERY_DAYS = int(((90 / 5) * 2) + EVAL_DAYS)
@@ -19,9 +19,9 @@ MAX_DAYS = QUERY_DAYS * 2
 EMA_WINDOW = 13
 ROC_WINDOW = 90
 
-with open(TICKER_PATH, 'r') as f:
-    reader = csv.reader(f)
-    TICKERS = [row[0] for row in reader]
+# with open(TICKER_PATH, 'r') as f:
+#     reader = csv.reader(f)
+#     TICKERS = [row[0] for row in reader]
 
 logger = logging.getLogger('apscheduler')
 
@@ -30,7 +30,8 @@ def update():
     """
     iterate tickers and get close data from api
     """
-    tickers = get_tickerslice(TICKERS)
+    db_tickers = [row["symbol"] for row in top_n_symbols()]
+    tickers = get_tickerslice(db_tickers)
     min_ts = datetime.timestamp(datetime.now() - timedelta(days=MAX_DAYS))
     logger.info(f"min timestamp: {min_ts}")
     for ticker in tickers:
