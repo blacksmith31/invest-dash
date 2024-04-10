@@ -22,9 +22,8 @@ def get_symbols(timeout:int=10000):
         if response.status_code != 200:
             print(f"request for {url} failed")
             return []
-        print(f"length: {len(response.json())} for {url}")
+        print(f"length: {len(response.json())} for {url.split('/')[-1]}")
         response_data += response.json()
-        print(f"lenght response data: {len(response_data)}")
     return response_data
 
 def prep_syms(syms: list[dict]):

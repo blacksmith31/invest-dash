@@ -30,7 +30,7 @@ async def lifespan(app: FastAPI):
                           day_of_week='mon-fri', hour='21',
                           minute='55', timezone="US/Eastern")
     symbol_trigger = CronTrigger(year='*', month='*', day='*',
-                                 day_of_week='sun', hour='5',
+                                 day_of_week='sat', hour='5',
                                  minute='0', timezone="US/Eastern")
     scheduler.add_job(update, trigger=trigger, name="Updater")
     scheduler.add_job(symbol_update, trigger=symbol_trigger, name="SymbolUpdate")
