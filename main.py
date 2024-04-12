@@ -86,6 +86,12 @@ def symbols_html(request: Request):
                "data": data}
     return templates.TemplateResponse("view_symbol_hdr.html", context)
 
+@app.get("/top_symbols/", status_code=200, response_class=JSONResponse)
+def top_n_symbols(n:int=100):
+    # http://localhost:8080/top_symbols/?n=10
+    data = db.top_n_symbols(n)
+    return data
+
 @app.get("/tickers")
 def get_tickers():
     result = db.get_ticker_eods()
