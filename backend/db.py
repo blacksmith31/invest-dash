@@ -48,11 +48,13 @@ def get_recent_eods():
     try:
         with con:
             result = con.execute("""
-                SELECT date, 
+                SELECT timestamp, 
                        ticker, 
-                       close 
+                       close,
+                       max(sroc)
                   FROM ticker_history
-                 WHERE date > DATE() - 1
+                 WHERE sroc > 60
+                 GROUP BY ticker
             """).fetchall()
             return result
     except sqlite3.DatabaseError:
@@ -253,6 +255,7 @@ def view_symbol_hdr():
                    sector,
                    row_number() over(order by mktcap desc) mktcap_rank
             FROM symbol_hdr
+            ORDER BY mktcap desc
             """).fetchall()
         return result
 

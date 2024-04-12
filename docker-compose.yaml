@@ -7,3 +7,4 @@ services:
       - 8080:8080
     volumes:
       - ./data:/invest_dash/data
+      - .:/invest_dash

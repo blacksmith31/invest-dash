@@ -13,6 +13,9 @@ def score_round(score: float):
 def from_json(s):
     return json.loads(s)
 
+def fmt_currency(val):
+    return '${:,.0f}'.format(float(val))
 
 if __name__ == "__main__":
-    print(ts_to_str(1695758401))
+    #print(ts_to_str(1695758401))
+    print(fmt_currency(1695758401))

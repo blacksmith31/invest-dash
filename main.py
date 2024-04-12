@@ -5,14 +5,16 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from jinja2_fragments.fastapi import Jinja2Blocks
 import logging
 from pathlib import Path
 
+from numpy import result_type
+
 from backend import db
-from backend.helpers import from_json, ts_to_str, score_round
+from backend.helpers import from_json, ts_to_str, score_round, fmt_currency
 from backend.updater import update
 from backend.symbols import symbol_update
 
@@ -66,42 +68,21 @@ def root(request: Request, limit: int = 10):
                                       block_name=block_name)
 
 
-@app.get("/chart_data", status_code=200, response_class=HTMLResponse)
-def chart_data(request: Request, ticker: str = ''):
-    data = db.get_history(ticker)
-    # print(f"request: {request.json()}")
-    print(f"ticker: {ticker}")
-    # labels = [Markup(ts_to_str(row["timestamp"])) for row in data]
-    labels = [row["timestamp"] for row in data]
-    closes = [round(row["close"] or 0, 2) for row in data]
-    scores = [round(row["sroc"] or 0, 2) for row in data]
-    context = {"request": request,
-               "ticker": ticker,
-               "labels": labels,
-               "y1": closes,
-               "y2": scores,
-               "ts_to_str": ts_to_str}
-    block_name = None
-    # if request.headers.get("HX-Request"):
-    #     block_name = "chart"
-    return templates.TemplateResponse("chart.html",
-                                      context,
-                                      block_name=block_name)
+@app.get("/recent_closes", status_code=200, response_class=JSONResponse)
+def recent_closes(request: Request):
+    data = db.get_recent_eods()
+    return data
 
+@app.get("/symbols", status_code=200, response_class=JSONResponse)
+def symbols(request: Request):
+    data = db.view_symbol_hdr()
+    return data
 
-@app.get("/chart_data2", status_code=200, response_class=HTMLResponse)
-def chart_data2(request: Request, ticker: str = ''):
-    data = db.get_ticker_sroc(ticker)
-    # data = json.dumps(data)
-    context = {"request": request,
-               "data": data}
-    return templates.TemplateResponse("chart2.html",
-                                      context)
-
-@app.get("/symbol_hdr", status_code=200, response_class=HTMLResponse)
-def symbol_hdr(request: Request):
+@app.get("/symbols_html", status_code=200, response_class=HTMLResponse)
+def symbols_html(request: Request):
     data = db.view_symbol_hdr()
     context = {"request": request,
+               "fmt_currency": fmt_currency,
                "data": data}
     return templates.TemplateResponse("view_symbol_hdr.html", context)
 
