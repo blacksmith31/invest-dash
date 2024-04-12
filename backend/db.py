@@ -237,7 +237,7 @@ def top_n_symbols(n: int = 1000):
             result = con.execute("""
                                  SELECT symbol
                                  FROM symbol_hdr
-                                 ORDER BY mktcap
+                                 ORDER BY mktcap DESC
                                  LIMIT ?
                                  """, [n]).fetchall()
             return result

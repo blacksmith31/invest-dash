@@ -108,7 +108,7 @@ def symbols_html(request: Request):
     return templates.TemplateResponse("view_symbol_hdr.html", context)
 
 @app.get("/top_symbols/", status_code=200, response_class=JSONResponse)
-def top_n_symbols(n:int=100):
+def top_n_symbols(n:int=1000):
     # http://localhost:8080/top_symbols/?n=10
     data = db.top_n_symbols(n)
     return data
@@ -130,10 +130,5 @@ def get_score(symbol: str):
     result = db.get_ticker_sroc(symbol)
     return result
 
-
-@app.get("/chart", response_class=HTMLResponse)
-def get_chart(request: Request):
-    context = {"request": request}
-    return templates.TemplateResponse("chart.html", context)
 
 
