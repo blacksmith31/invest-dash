@@ -67,6 +67,27 @@ def root(request: Request, limit: int = 10):
                                       context,
                                       block_name=block_name)
 
+@app.get("/chart_data", status_code=200, response_class=HTMLResponse)
+def chart_data(request: Request, ticker: str = ''):
+    data = db.get_history(ticker)
+    # print(f"request: {request.json()}")
+    print(f"ticker: {ticker}")
+    # labels = [Markup(ts_to_str(row["timestamp"])) for row in data]
+    labels = [row["timestamp"] for row in data]
+    closes = [round(row["close"] or 0, 2) for row in data]
+    scores = [round(row["sroc"] or 0, 2) for row in data]
+    context = {"request": request,
+               "ticker": ticker,
+               "labels": labels,
+               "y1": closes,
+               "y2": scores,
+               "ts_to_str": ts_to_str}
+    block_name = None
+    # if request.headers.get("HX-Request"):
+    #     block_name = "chart"
+    return templates.TemplateResponse("chart.html",
+                                      context,
+                                      block_name=block_name)
 
 @app.get("/recent_closes", status_code=200, response_class=JSONResponse)
 def recent_closes(request: Request):
