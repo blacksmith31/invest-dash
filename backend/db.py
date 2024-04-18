@@ -1,5 +1,7 @@
 import sqlite3
 
+from backend.helpers import days_ago_to_ts
+
 con = sqlite3.connect("./data/scraper.db", check_same_thread=False)
 
 def dict_factory(cursor, row):
@@ -140,6 +142,25 @@ def get_latest_scores(limit: int) -> list[dict]:
     except sqlite3.DatabaseError:
         raise
 
+
+def get_prev_days_scores(limit: int, days: int=0) -> list[dict]:
+    prev_ts = days_ago_to_ts(days)
+    try:
+        with con:
+            result = con.execute("""
+            SELECT max(timestamp) ts
+                   ,ticker
+                   ,sroc
+              FROM ticker_history
+             WHERE timestamp < ?
+          GROUP BY ticker
+          ORDER BY sroc DESC
+             LIMIT ?
+             """, [prev_ts, limit]).fetchall()
+            return result
+    except sqlite3.DatabaseError:
+        raise
+        
 
 def get_ticker_latest(ticker: str) -> list[dict]:
     with con:
