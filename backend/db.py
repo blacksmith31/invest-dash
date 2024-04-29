@@ -67,12 +67,12 @@ def get_ticker_eods():
     try:
         with con:
             result = con.execute("""
-            SELECT date,
+            SELECT timestamp,
                    ticker,
                    close
               FROM ticker_history
           ORDER BY ticker
-                  ,date
+                  ,timestamp
             """).fetchall()
             return result
     except sqlite3.DatabaseError:
@@ -265,7 +265,7 @@ def top_n_symbols(n: int = 1000):
     except:
         raise
 
-def view_symbol_hdr():
+def view_symbol_hdr(limit:int=9999):
     with con:
         result = con.execute("""
             SELECT symbol,
@@ -277,7 +277,8 @@ def view_symbol_hdr():
                    row_number() over(order by mktcap desc) mktcap_rank
             FROM symbol_hdr
             ORDER BY mktcap desc
-            """).fetchall()
+            LIMIT ?
+            """, [limit]).fetchall()
         return result
 
 def update_prev_pos():

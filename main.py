@@ -11,8 +11,6 @@ from jinja2_fragments.fastapi import Jinja2Blocks
 import logging
 from pathlib import Path
 
-from numpy import result_type
-
 from backend import db
 from backend.helpers import from_json, ts_to_str, score_round, fmt_currency
 from backend.updater import update
@@ -71,7 +69,6 @@ def root(request: Request, limit: int = 10):
 def chart_data(request: Request, ticker: str = ''):
     data = db.get_history(ticker)
     # print(f"request: {request.json()}")
-    print(f"ticker: {ticker}")
     # labels = [Markup(ts_to_str(row["timestamp"])) for row in data]
     labels = [row["timestamp"] for row in data]
     closes = [round(row["close"] or 0, 2) for row in data]
@@ -89,16 +86,6 @@ def chart_data(request: Request, ticker: str = ''):
                                       context,
                                       block_name=block_name)
 
-@app.get("/recent_closes", status_code=200, response_class=JSONResponse)
-def recent_closes(request: Request):
-    data = db.get_recent_eods()
-    return data
-
-@app.get("/symbols", status_code=200, response_class=JSONResponse)
-def symbols(request: Request):
-    data = db.view_symbol_hdr()
-    return data
-
 @app.get("/symbols_html", status_code=200, response_class=HTMLResponse)
 def symbols_html(request: Request):
     data = db.view_symbol_hdr()
@@ -106,6 +93,24 @@ def symbols_html(request: Request):
                "fmt_currency": fmt_currency,
                "data": data}
     return templates.TemplateResponse("view_symbol_hdr.html", context)
+
+@app.get("/symbols_hdr", status_code=200, response_class=HTMLResponse)
+def symbols_hdr(request: Request):
+    data = db.view_symbol_hdr(limit=1000)
+    context = {"request": request,
+               "fmt_currency": fmt_currency,
+               "data": data}
+    return templates.TemplateResponse("view_symbol_hdr.html", context)
+
+@app.get("/recent_closes", status_code=200, response_class=JSONResponse)
+def recent_closes():
+    data = db.get_recent_eods()
+    return data
+
+@app.get("/symbols", status_code=200, response_class=JSONResponse)
+def symbols():
+    data = db.view_symbol_hdr()
+    return data
 
 @app.get("/top_symbols/", status_code=200, response_class=JSONResponse)
 def top_n_symbols(n:int=1000):
