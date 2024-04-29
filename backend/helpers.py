@@ -22,9 +22,20 @@ def from_json(s):
 def fmt_currency(val):
     return '${:,.0f}'.format(float(val))
 
+def fmt_currency_word(val):
+    millnames = ['', 'Th', 'M', 'B', 'T']
+    val = float(val)
+    millidx = max(0, min(len(millnames)-1, 
+                  int(math.floor(0 if val == 0 else math.log10(abs(val))/3))))
+    if val > 1000000:
+        return '${:,.2f}{}'.format(val / 10**(3 * millidx), millnames[millidx])
+    else:
+        return '${:,.2f}'.format(float(val))
+
 if __name__ == "__main__":
     #print(ts_to_str(1695758401))
-    # print(fmt_currency(1695758401))
-    print(f"0 days ago: {days_ago_to_ts(0)}")
-    added, removed = list_compare([4, 5, 6, 1], [1, 2, 3, 4])
-    print(f"added: {added}, removed: {removed}")
+    for v in [123, 1234, 12345, 123456, 1234567, 123456789, 1234567890, 123456789000, 1234567890000]:
+        print(fmt_currency_word(v))
+    # print(f"0 days ago: {days_ago_to_ts(0)}")
+    # added, removed = list_compare([4, 5, 6, 1], [1, 2, 3, 4])
+    # print(f"added: {added}, removed: {removed}")
