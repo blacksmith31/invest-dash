@@ -12,7 +12,14 @@ import logging
 from pathlib import Path
 
 from backend import db
-from backend.helpers import from_json, ts_to_str, score_round, fmt_currency
+from backend.helpers import (
+    day_scores_compare,
+    fmt_currency_word, 
+    from_json,
+    ts_to_str, 
+    score_round, 
+    fmt_currency
+)
 from backend.updater import update
 from backend.symbols import symbol_update
 
@@ -53,7 +60,7 @@ app.add_middleware(
 
 @app.get("/", status_code=200, response_class=HTMLResponse)
 def root(request: Request, limit: int = 10):
-    data = db.get_latest_scores(limit)
+    data = db.select_latest_scores(limit)
     context = {"request": request,
                "data": data,
                "ts_to_str": ts_to_str,
@@ -67,7 +74,7 @@ def root(request: Request, limit: int = 10):
 
 @app.get("/chart_data", status_code=200, response_class=HTMLResponse)
 def chart_data(request: Request, ticker: str = ''):
-    data = db.get_history(ticker)
+    data = db.select_ticker_history(ticker)
     # print(f"request: {request.json()}")
     # labels = [Markup(ts_to_str(row["timestamp"])) for row in data]
     labels = [row["timestamp"] for row in data]
@@ -90,7 +97,7 @@ def chart_data(request: Request, ticker: str = ''):
 def symbols_html(request: Request):
     data = db.view_symbol_hdr()
     context = {"request": request,
-               "fmt_currency": fmt_currency,
+               "fmt_currency": fmt_currency_word,
                "data": data}
     return templates.TemplateResponse("view_symbol_hdr.html", context)
 
@@ -102,10 +109,21 @@ def symbols_hdr(request: Request):
                "data": data}
     return templates.TemplateResponse("view_symbol_hdr.html", context)
 
-@app.get("/recent_closes", status_code=200, response_class=JSONResponse)
-def recent_closes():
-    data = db.get_recent_eods()
-    return data
+@app.get("/compare")
+def compare(prev_days:int=7):
+    d1 = db.select_prev_days_scores(limit=5, days=0)
+    d2 = db.select_prev_days_scores(limit=5, days=prev_days)
+    added, removed = day_scores_compare(d1, d2)
+    return added, removed
+
+@app.get("/view_scores", status_code=200, response_class=HTMLResponse)
+def view_daily_scores(request: Request):
+    data = db.view_daily_scores()
+    col_names = list(data[0].keys())
+    context = {"request": request,
+               "col_names": col_names,
+               "data": data}
+    return templates.TemplateResponse("view_daily_scores.html", context)
 
 @app.get("/symbols", status_code=200, response_class=JSONResponse)
 def symbols():
@@ -115,24 +133,24 @@ def symbols():
 @app.get("/top_symbols/", status_code=200, response_class=JSONResponse)
 def top_n_symbols(n:int=1000):
     # http://localhost:8080/top_symbols/?n=10
-    data = db.top_n_symbols(n)
+    data = db.select_top_symbols_mcap(n)
     return data
 
-@app.get("/tickers")
+@app.get("/tickers/close")
 def get_tickers():
-    result = db.get_ticker_eods()
+    result = db.select_sorted_closes()
     return result
 
 
 @app.get("/tickers/{symbol}/close")
 def get_ticker(symbol: str):
-    result = db.get_ticker(symbol)
+    result = db.select_ticker_closes(symbol)
     return result
 
 
 @app.get("/tickers/{symbol}/scores")
 def get_score(symbol: str):
-    result = db.get_ticker_sroc(symbol)
+    result = db.select_ticker_scores(symbol)
     return result
 
 

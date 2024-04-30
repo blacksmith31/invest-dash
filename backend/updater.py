@@ -1,12 +1,17 @@
-import csv
 from datetime import datetime, timedelta
 import logging
-from pathlib import Path
 import polars as pl
 import random
 import time
 
-from backend.db import get_ticker, get_ticker_latest, prune_data, top_n_symbols, update_close_many, update_sroc_many
+from backend.db import (
+    select_ticker_closes, 
+    select_max_ticker_ts, 
+    prune_ticker_history, 
+    select_top_symbols_mcap, 
+    insert_closes_many, 
+    update_sroc_many
+)
 from backend.yfi import get_days_history
 
 
@@ -30,7 +35,7 @@ def update():
     """
     iterate tickers and get close data from api
     """
-    db_tickers = [row["symbol"] for row in top_n_symbols()]
+    db_tickers = [row["symbol"] for row in select_top_symbols_mcap()]
     tickers = get_tickerslice(db_tickers)
     min_ts = datetime.timestamp(datetime.now() - timedelta(days=MAX_DAYS))
     logger.info(f"min timestamp: {min_ts}")
@@ -43,7 +48,7 @@ def update():
             continue
         # dont use current day return as timestamp will be off
         new_data = get_days_history(ticker, query_days)[:-1]
-        update_close_many(new_data)
+        insert_closes_many(new_data)
 
         # calc sroc for ticker and update sroc table
         sroc_data = calc_sroc(ticker)
@@ -54,7 +59,7 @@ def update():
         time.sleep(sleep_time)
 
     # prune data
-    prune_data(int(min_ts))    
+    prune_ticker_history(int(min_ts))    
     logger.info(f"successfully pruned data older than {int(min_ts)}")
 
 
@@ -71,7 +76,7 @@ def get_tickerslice(all_tickers: list) -> list:
 
 
 def calc_query_days(ticker: str, min_days: int = QUERY_DAYS) -> int:
-    latest_data = get_ticker_latest(ticker)[0]
+    latest_data = select_max_ticker_ts(ticker)[0]
     latest, daycount = latest_data['latest'], latest_data['daycount']
 
     logger.info(f"{ticker}: latest: {latest}, daycount: {daycount}")
@@ -95,7 +100,7 @@ def calc_query_days(ticker: str, min_days: int = QUERY_DAYS) -> int:
 
 
 def calc_sroc(ticker: str, ema_window: int = EMA_WINDOW, roc_window: int = ROC_WINDOW) -> list[dict]:
-    result = get_ticker(ticker)
+    result = select_ticker_closes(ticker)
     headers = ["timestamp", "close"]
     data_series = [[row["timestamp"] for row in result], [row["close"] for row in result]]
     dict_data = {header: data for header, data in zip(headers, data_series)}

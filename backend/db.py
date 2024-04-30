@@ -46,24 +46,24 @@ def drop_table(name: str):
         print("failed to drop table")
 
 
-def get_recent_eods():
-    try:
-        with con:
-            result = con.execute("""
-                SELECT timestamp, 
-                       ticker, 
-                       close,
-                       max(sroc)
-                  FROM ticker_history
-                 WHERE sroc > 60
-                 GROUP BY ticker
-            """).fetchall()
-            return result
-    except sqlite3.DatabaseError:
-        raise
+# def get_recent_eods():
+#     try:
+#         with con:
+#             result = con.execute("""
+#                 SELECT timestamp, 
+#                        ticker, 
+#                        close,
+#                        max(sroc)
+#                   FROM ticker_history
+#                  WHERE sroc > 60
+#                  GROUP BY ticker
+#             """).fetchall()
+#             return result
+#     except sqlite3.DatabaseError:
+#         raise
 
 
-def get_ticker_eods():
+def select_sorted_closes():
     try:
         with con:
             result = con.execute("""
@@ -79,7 +79,7 @@ def get_ticker_eods():
         raise
 
 
-def get_history(ticker: str):
+def select_ticker_history(ticker: str):
     try:
         with con:
             result = con.execute("""
@@ -96,7 +96,7 @@ def get_history(ticker: str):
         raise
 
 
-def get_ticker(ticker: str) -> list[dict]:
+def select_ticker_closes(ticker: str) -> list[dict]:
     try:
         with con:
             result = con.execute("""
@@ -111,7 +111,7 @@ def get_ticker(ticker: str) -> list[dict]:
         raise
 
 
-def get_ticker_sroc(ticker: str) -> list[dict]:
+def select_ticker_scores(ticker: str) -> list[dict]:
     try:
         with con:
             result = con.execute("""
@@ -126,7 +126,7 @@ def get_ticker_sroc(ticker: str) -> list[dict]:
         raise
 
 
-def get_latest_scores(limit: int) -> list[dict]:
+def select_latest_scores(limit: int) -> list[dict]:
     try:
         with con:
             result = con.execute("""
@@ -143,7 +143,7 @@ def get_latest_scores(limit: int) -> list[dict]:
         raise
 
 
-def get_prev_days_scores(limit: int, days: int=0) -> list[dict]:
+def select_prev_days_scores(limit: int, days: int=0) -> list[dict]:
     prev_ts = days_ago_to_ts(days)
     try:
         with con:
@@ -162,7 +162,7 @@ def get_prev_days_scores(limit: int, days: int=0) -> list[dict]:
         raise
         
 
-def get_ticker_latest(ticker: str) -> list[dict]:
+def select_max_ticker_ts(ticker: str) -> list[dict]:
     with con:
         result = con.execute("""
         SELECT max(timestamp) latest,
@@ -173,7 +173,7 @@ def get_ticker_latest(ticker: str) -> list[dict]:
         return result
 
 
-def update_history(ticker: str, timestamp: int, close: float) -> None:
+def insert_ticker_close(ticker: str, timestamp: int, close: float) -> None:
     with con:
         con.execute("""
             INSERT INTO ticker_history (
@@ -186,7 +186,7 @@ def update_history(ticker: str, timestamp: int, close: float) -> None:
         return None
 
 
-def update_close_many(data: list[tuple]) -> None:
+def insert_closes_many(data: list[tuple]) -> None:
     if data:
         with con:
             con.executemany("""
@@ -221,8 +221,32 @@ def update_sroc_many(data: list[dict]) -> None:
         """, data)
         return None
 
+def view_daily_scores():
+    sql_gen = """
+       with days as (
+           select distinct timestamp as day 
+           from ticker_history 
+           where sroc is not null
+           and timestamp > strftime('%s','now', '-7 days')
+           ),
+       lines as (
+           select 'select ticker ' as part
+           union all
+           select ', sum(sroc) filter (where timestamp = ' || day || ') as "' || date(day, 'unixepoch') || '" '
+           from days
+           union all
+           select 'from ticker_history group by ticker order by ticker;'
+       )
+       select group_concat(part, '')
+       from lines;
+    """
+    with con:
+        sql = list(con.execute(sql_gen).fetchall()[0].values())[0]
+    # with con:
+        data = con.execute(sql).fetchall()
+    return data
 
-def prune_data(min_ts: int) -> None:
+def prune_ticker_history(min_ts: int) -> None:
     with con:
         con.execute("""
                     DELETE FROM ticker_history
@@ -252,7 +276,7 @@ def insert_update_sym_hdr(data: list[dict]) -> None:
         """, data)
         return None
 
-def top_n_symbols(n: int = 1000):
+def select_top_symbols_mcap(n: int = 1000):
     try:
         with con:
             result = con.execute("""
@@ -285,15 +309,18 @@ def update_prev_pos():
     try:
         with con:
             con.execute("""
-                        update symbol_hdr
-                        set prev_position = curr.top
-                        from (select symbol, row_number() over(order by mktcap desc) as top from symbol_hdr) as curr
-                        where symbol_hdr.symbol = curr.symbol;
-                        """)
+                UPDATE symbol_hdr
+                   SET prev_position = curr.top
+                  FROM (
+                       SELECT symbol, 
+                           row_number() OVER(ORDER BY mktcap DESC) as top 
+                       FROM symbol_hdr) as curr
+                 WHERE symbol_hdr.symbol = curr.symbol;
+                """)
     except:
         raise
 
-def update_tracked(n: int):
+def update_symbols_autotrack(n: int):
     try:
         with con:
             con.execute("""
@@ -311,7 +338,7 @@ def update_tracked(n: int):
     except:
         raise
 
-def toggle_own(symbol: str):
+def update_symbol_own(symbol: str):
     with con:
         con.execute("""
                     update symbol_hdr
@@ -326,14 +353,16 @@ if __name__ == "__main__":
     # drop_eod_table()
     # create_eod_table()
 
+    sql = view_daily_scores()
+    print(f"generated sql: {sql}")
     # tablenames = con.execute("SELECT name FROM sqlite_master").fetchall()
     # print(tablenames)
     # if len(tablenames):
     #     assert f"ticker_eod" in [table["name"] for table in tablenames]
     # else:
     #     print("No tables exist")
-    data = get_latest_scores(10)
-    print(data)
+    # data = select_latest_scores(10)
+    # print(data)
     # eods = get_ticker_eods()
     # for d in eods:
     #     print(d)

@@ -1,5 +1,10 @@
 import requests
-from backend.db import insert_update_sym_hdr, toggle_own, update_prev_pos, update_tracked
+from backend.db import (
+    insert_update_sym_hdr, 
+    update_symbol_own, 
+    update_prev_pos, 
+    update_symbols_autotrack
+)
 
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
 
@@ -47,7 +52,7 @@ def symbol_update():
     toins = prep_syms(syms)
     insert_update_sym_hdr(toins)
     # update tracked status
-    update_tracked(1000)
+    update_symbols_autotrack(1000)
 
 def test():
     # update previous position
@@ -59,7 +64,7 @@ def test():
     insert_update_sym_hdr(toins)
     #toggle_own("AE")
     # update tracked status
-    update_tracked(3)
+    update_symbols_autotrack(3)
 
 if __name__ == "__main__":
     test()

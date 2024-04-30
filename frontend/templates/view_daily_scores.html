@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <meta charstet="utf-8">	
+        <meta name="viewport" content="initial-scale=1, width=device-width">
+        <link rel="stylesheet" href="static/css/grid.css">
+        <title>Daily Scores</title>
+    </head>
+    <body>
+        <div style="height:20px"></div>
+    <div class="table-container">
+        {% block table %}
+        <table>
+            <thead>
+                <tr>
+                    {% for col in col_names %}
+                    <th class="rhdr">{{ col }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in data %}
+                <tr>
+                    {% for name in col_names %}
+                        <td>{{ row[name] }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endblock %}
+    </div>
+    </body>
+</html>

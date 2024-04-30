@@ -8,9 +8,11 @@ def ts_to_str(ts: float):
 def days_ago_to_ts(days: int):
     return math.floor(datetime.timestamp(datetime.today() - timedelta(days=days)))
 
-def list_compare(current, previous):
-    added = [item for item in current if item not in previous]
-    removed = [item for item in previous if item not in current]
+def day_scores_compare(current, previous):
+    curr_tickers = [item["ticker"] for item in current]
+    prev_tickers = [item["ticker"] for item in previous]
+    added = [item for item in current if item["ticker"] not in prev_tickers]
+    removed = [item for item in previous if item["ticker"] not in curr_tickers]
     return added, removed
 
 def score_round(score: float):
