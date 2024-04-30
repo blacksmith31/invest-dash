@@ -23,7 +23,11 @@
                 {% for row in data %}
                 <tr>
                     {% for name in col_names %}
+                        {% if name == "ticker" %}
                         <td>{{ row[name] }}</td>
+                        {% else %}
+                        <td>{{ row[name]|round(1) }}</td>
+                        {% endif %}
                     {% endfor %}
                 </tr>
                 {% endfor %}

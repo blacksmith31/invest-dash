@@ -1,3 +1,4 @@
+import operator
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
@@ -120,9 +121,12 @@ def compare(prev_days:int=7):
 def view_daily_scores(request: Request):
     data = db.view_daily_scores()
     col_names = list(data[0].keys())
+    max_date = max(col_names[1:])
+    print(f"max date {max_date}, in all: {all([max_date in row for row in data])}")
+    sorted_data = sorted(data, key=operator.itemgetter(max_date), reverse=True)
     context = {"request": request,
                "col_names": col_names,
-               "data": data}
+               "data": sorted_data}
     return templates.TemplateResponse("view_daily_scores.html", context)
 
 @app.get("/symbols", status_code=200, response_class=JSONResponse)

@@ -227,15 +227,15 @@ def view_daily_scores():
            select distinct timestamp as day 
            from ticker_history 
            where sroc is not null
-           and timestamp > strftime('%s','now', '-7 days')
+           and timestamp > strftime('%s','now', 'start of day', '-7 days')
            ),
        lines as (
            select 'select ticker ' as part
            union all
-           select ', sum(sroc) filter (where timestamp = ' || day || ') as "' || date(day, 'unixepoch') || '" '
+           select ', ifnull(sum(sroc) filter (where timestamp = ' || day || '), -999) as "' || date(day, 'unixepoch') || '" '
            from days
            union all
-           select 'from ticker_history group by ticker order by ticker;'
+           select 'from ticker_history group by ticker;'
        )
        select group_concat(part, '')
        from lines;
