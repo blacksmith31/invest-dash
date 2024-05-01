@@ -91,15 +91,22 @@ async def chart_data(request: Request, ticker: str = ''):
                                       context)
 
 @app.get("/changes", status_code=200, response_class=HTMLResponse)
-async def changes(request: Request, limit:int=20, prev_days:int=7):
-    current = db.select_prev_days_scores(limit=limit, days=0)
-    past = db.select_prev_days_scores(limit=limit, days=prev_days)
+async def changes(request: Request, limit:int=20, days:int=7):
+    current = db.select_prev_days_scores(limit=limit, days=0, window=7)
+    past = db.select_prev_days_scores(limit=limit, days=days, window=7)
     added, removed = day_scores_compare(current, past)
     context = {"request": request,
                "added_symbols": added,
                "removed_symbols": removed}
     return templates.TemplateResponse("changes.html",
                                       context)
+
+@app.get("/changes_json", status_code=200, response_class=JSONResponse)
+async def changes_json(limit:int=20, days:int=7):
+    current = db.select_prev_days_scores(limit=limit, days=0, window=7)
+    past = db.select_prev_days_scores(limit=limit, days=days, window=7)
+    added, removed = day_scores_compare(current, past)
+    return current, past, added, removed
 
 @app.get("/symbols_html", status_code=200, response_class=HTMLResponse)
 def symbols_html(request: Request):

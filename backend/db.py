@@ -1,6 +1,6 @@
 import sqlite3
 
-from backend.helpers import days_ago_to_ts
+from backend.helpers import days_ago_to_ts, ts_day_shift
 
 con = sqlite3.connect("./data/scraper.db", check_same_thread=False)
 
@@ -144,9 +144,10 @@ def select_latest_scores(limit: int) -> list[dict]:
         raise
 
 
-def select_prev_days_scores(limit: int, days: int=0) -> list[dict]:
+def select_prev_days_scores(limit: int, days: int=0, window: int=7) -> list[dict]:
     ### TODO add "lookback" window?
-    prev_ts = days_ago_to_ts(days)
+    max_ts = days_ago_to_ts(days)
+    min_ts = ts_day_shift(max_ts, window)
     try:
         with con:
             result = con.execute("""
@@ -155,10 +156,11 @@ def select_prev_days_scores(limit: int, days: int=0) -> list[dict]:
                    ,sroc
               FROM ticker_history
              WHERE timestamp < ?
+               AND timestamp > ?
           GROUP BY ticker
           ORDER BY sroc DESC
              LIMIT ?
-             """, [prev_ts, limit]).fetchall()
+             """, [max_ts, min_ts, limit]).fetchall()
             return result
     except sqlite3.DatabaseError:
         raise
