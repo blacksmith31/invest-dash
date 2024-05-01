@@ -119,8 +119,8 @@ def symbols_hdr(request: Request):
 
 
 @app.get("/view_scores", status_code=200, response_class=HTMLResponse)
-def view_daily_scores(request: Request):
-    data = db.view_daily_scores()
+def view_daily_scores(request: Request, days: int = 7):
+    data = db.view_daily_scores(days)
     col_names = list(data[0].keys())
     max_date = max(col_names[1:])
     print(f"max date {max_date}, in all: {all([max_date in row for row in data])}")

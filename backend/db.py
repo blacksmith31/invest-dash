@@ -145,6 +145,7 @@ def select_latest_scores(limit: int) -> list[dict]:
 
 
 def select_prev_days_scores(limit: int, days: int=0) -> list[dict]:
+    ### TODO add "lookback" window?
     prev_ts = days_ago_to_ts(days)
     try:
         with con:
@@ -222,13 +223,13 @@ def update_sroc_many(data: list[dict]) -> None:
         """, data)
         return None
 
-def view_daily_scores():
-    sql_gen = """
+def view_daily_scores(days:int=7):
+    sql_gen = f"""
        with days as (
            select distinct timestamp as day 
            from ticker_history 
            where sroc is not null
-           and timestamp > strftime('%s','now', 'start of day', '-7 days')
+           and timestamp > strftime('%s','now', 'start of day', '-{days} days')
            ),
        lines as (
            select 'select ticker ' as part
