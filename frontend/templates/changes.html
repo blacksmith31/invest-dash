@@ -1,0 +1,44 @@
+
+<p id="compare-title">Symbol Changes</p>
+
+<p id="table-title">Added</p>
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Updated</th>
+                <th>Symbol</th>
+                <th>Score</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in added_symbols %}
+            <tr>
+                <td>{{ row["update_day"] }}</td>
+                <td>{{ row["ticker"] }}</td>
+                <td>{{ row["sroc"]|round(2) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+<p id="table-title">Removed</p>
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Updated</th>
+                <th>Symbol</th>
+                <th>Score</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in removed_symbols %}
+            <tr>
+                <td>{{ row["update_day"] }}</td>
+                <td>{{ row["ticker"] }}</td>
+                <td>{{ row["sroc"]|round(2) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>

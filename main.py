@@ -1,4 +1,3 @@
-import operator
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
@@ -10,6 +9,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from jinja2_fragments.fastapi import Jinja2Blocks
 import logging
+import operator
 from pathlib import Path
 
 from backend import db
@@ -60,7 +60,7 @@ app.add_middleware(
 
 
 @app.get("/", status_code=200, response_class=HTMLResponse)
-def root(request: Request, limit: int = 10):
+async def root(request: Request, limit: int = 20):
     data = db.select_latest_scores(limit)
     context = {"request": request,
                "data": data,
@@ -74,7 +74,7 @@ def root(request: Request, limit: int = 10):
                                       block_name=block_name)
 
 @app.get("/chart_data", status_code=200, response_class=HTMLResponse)
-def chart_data(request: Request, ticker: str = ''):
+async def chart_data(request: Request, ticker: str = ''):
     data = db.select_ticker_history(ticker)
     # print(f"request: {request.json()}")
     # labels = [Markup(ts_to_str(row["timestamp"])) for row in data]
@@ -87,12 +87,19 @@ def chart_data(request: Request, ticker: str = ''):
                "y1": closes,
                "y2": scores,
                "ts_to_str": ts_to_str}
-    block_name = None
-    # if request.headers.get("HX-Request"):
-    #     block_name = "chart"
     return templates.TemplateResponse("chart.html",
-                                      context,
-                                      block_name=block_name)
+                                      context)
+
+@app.get("/changes", status_code=200, response_class=HTMLResponse)
+async def changes(request: Request, limit:int=20, prev_days:int=7):
+    current = db.select_prev_days_scores(limit=limit, days=0)
+    past = db.select_prev_days_scores(limit=limit, days=prev_days)
+    added, removed = day_scores_compare(current, past)
+    context = {"request": request,
+               "added_symbols": added,
+               "removed_symbols": removed}
+    return templates.TemplateResponse("changes.html",
+                                      context)
 
 @app.get("/symbols_html", status_code=200, response_class=HTMLResponse)
 def symbols_html(request: Request):
@@ -110,12 +117,6 @@ def symbols_hdr(request: Request):
                "data": data}
     return templates.TemplateResponse("view_symbol_hdr.html", context)
 
-@app.get("/compare")
-def compare(prev_days:int=7):
-    d1 = db.select_prev_days_scores(limit=5, days=0)
-    d2 = db.select_prev_days_scores(limit=5, days=prev_days)
-    added, removed = day_scores_compare(d1, d2)
-    return added, removed
 
 @app.get("/view_scores", status_code=200, response_class=HTMLResponse)
 def view_daily_scores(request: Request):

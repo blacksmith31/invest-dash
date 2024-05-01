@@ -149,7 +149,7 @@ def select_prev_days_scores(limit: int, days: int=0) -> list[dict]:
     try:
         with con:
             result = con.execute("""
-            SELECT max(timestamp) ts
+            SELECT date(max(timestamp), 'unixepoch') update_day
                    ,ticker
                    ,sroc
               FROM ticker_history
