@@ -134,7 +134,7 @@ def select_latest_scores(limit: int) -> list[dict]:
                    ,ticker
                    ,sroc
               FROM ticker_history
-             WHERE timestamp > strftime('%s', 'now', 'start of day', '-8 days')
+             WHERE timestamp > strftime('%s', 'now', 'start of day', '-7 days')
           GROUP BY ticker
           ORDER BY sroc DESC
              LIMIT ?
