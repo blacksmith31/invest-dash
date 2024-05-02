@@ -64,16 +64,16 @@ class USTimeZone(tzinfo):
     def __repr__(self):
         return self.reprname
 
-    def tzname(self, dt):
+    def tzname(self, dt:datetime):
         if self.dst(dt):
             return self.dstname
         else:
             return self.stdname
 
-    def utcoffset(self, dt):
+    def utcoffset(self, dt:datetime):
         return self.stdoffset + self.dst(dt)
 
-    def dst(self, dt):
+    def dst(self, dt:datetime):
         if dt is None or dt.tzinfo is None:
             # raise ValueError here?
             return ZERO
