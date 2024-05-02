@@ -1,7 +1,5 @@
 import sqlite3
 
-from backend.helpers import days_ago_to_ts, ts_day_shift
-
 con = sqlite3.connect("./data/scraper.db", check_same_thread=False)
 
 def dict_factory(cursor, row):
