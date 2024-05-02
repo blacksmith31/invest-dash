@@ -2,6 +2,8 @@ from datetime import datetime, timedelta
 import json
 import math
 
+from backend.dtz import Eastern
+
 def ts_to_str(ts: float):
     return datetime.fromtimestamp(ts).strftime("%Y/%m/%d %H:%M:%S")
 
@@ -9,10 +11,10 @@ def midnight(dt: datetime):
     return dt.replace(hour=0, minute=0, second=0, microsecond=0)
 
 def days_ago_to_ts(days: int):
-    return math.floor(datetime.timestamp(midnight(datetime.now()) - timedelta(days=days)))
+    return math.floor(datetime.timestamp(midnight(datetime.now(tz=Eastern)) - timedelta(days=days)))
 
 def ts_day_shift(ts: float, days: int):
-    return math.floor(datetime.timestamp(datetime.fromtimestamp(ts) - timedelta(days=days)))
+    return math.floor(datetime.timestamp(datetime.fromtimestamp(ts, tz=Eastern) - timedelta(days=days)))
 
 def day_scores_compare(current, previous):
     curr_tickers = [item["ticker"] for item in current]

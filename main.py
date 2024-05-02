@@ -19,7 +19,9 @@ from backend.helpers import (
     from_json,
     ts_to_str, 
     score_round, 
-    fmt_currency
+    fmt_currency,
+    days_ago_to_ts,
+    ts_day_shift
 )
 from backend.updater import update
 from backend.symbols import symbol_update
@@ -91,9 +93,13 @@ async def chart_data(request: Request, ticker: str = ''):
                                       context)
 
 @app.get("/changes", status_code=200, response_class=HTMLResponse)
-async def changes(request: Request, limit:int=20, days:int=7):
-    current = db.select_prev_days_scores(limit=limit, days=0, window=7)
-    past = db.select_prev_days_scores(limit=limit, days=days, window=7)
+async def changes(request: Request, limit:int=20, days:int=7, window:int=7):
+    current_ts = days_ago_to_ts(0)
+    prev_max_ts = days_ago_to_ts(days)
+    curr_min_ts = ts_day_shift(current_ts, window)
+    prev_min_ts = ts_day_shift(prev_max_ts, window)
+    current = db.select_prev_days_scores(limit=limit, min_ts=curr_min_ts, max_ts=current_ts)
+    past = db.select_prev_days_scores(limit=limit, min_ts=prev_min_ts, max_ts=prev_max_ts)
     added, removed = day_scores_compare(current, past)
     context = {"request": request,
                "added_symbols": added,
@@ -102,9 +108,13 @@ async def changes(request: Request, limit:int=20, days:int=7):
                                       context)
 
 @app.get("/changes_json", status_code=200, response_class=JSONResponse)
-async def changes_json(limit:int=20, days:int=7):
-    current = db.select_prev_days_scores(limit=limit, days=0, window=7)
-    past = db.select_prev_days_scores(limit=limit, days=days, window=7)
+async def changes_json(limit:int=20, days:int=7, window:int=7):
+    current_ts = days_ago_to_ts(0)
+    prev_max_ts = days_ago_to_ts(days)
+    curr_min_ts = ts_day_shift(current_ts, window)
+    prev_min_ts = ts_day_shift(prev_max_ts, window)
+    current = db.select_prev_days_scores(limit=limit, min_ts=curr_min_ts, max_ts=current_ts)
+    past = db.select_prev_days_scores(limit=limit, min_ts=prev_min_ts, max_ts=prev_max_ts)
     added, removed = day_scores_compare(current, past)
     return current, past, added, removed
 

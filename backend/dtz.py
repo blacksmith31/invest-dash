@@ -12,7 +12,6 @@ def first_sunday_on_or_after(dt):
         dt += timedelta(days_to_go)
     return dt
 
-
 # US DST Rules
 #
 # This is a simplified (i.e., wrong for a few cases) set of rules for US

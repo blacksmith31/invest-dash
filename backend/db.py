@@ -144,10 +144,7 @@ def select_latest_scores(limit: int) -> list[dict]:
         raise
 
 
-def select_prev_days_scores(limit: int, days: int=0, window: int=7) -> list[dict]:
-    ### TODO add "lookback" window?
-    max_ts = days_ago_to_ts(days)
-    min_ts = ts_day_shift(max_ts, window)
+def select_prev_days_scores(limit: int, min_ts:int, max_ts:int) -> list[dict]:
     try:
         with con:
             result = con.execute("""
