@@ -1,8 +1,7 @@
-from datetime import datetime, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
-
 from contextlib import asynccontextmanager
+from datetime import datetime, timedelta
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,7 +17,6 @@ from backend.helpers import (
     day_scores_compare,
     dt_day_shift_ts,
     fmt_currency_word, 
-    from_json,
     ts_to_datestr,
     ts_to_str, 
     score_round, 
@@ -32,7 +30,7 @@ logging.getLogger('apscheduler').setLevel(logging.DEBUG)
 
 BASE_PATH = Path(__file__).resolve().parent
 templates = Jinja2Blocks(directory=str(BASE_PATH / "frontend/templates"))
-templates.env.filters["from_json"] = from_json
+#templates.env.filters["from_json"] = from_json
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -63,8 +61,11 @@ app.add_middleware(
 
 
 @app.get("/", status_code=200, response_class=HTMLResponse)
-async def root(request: Request, limit: int = 20):
-    data = db.select_latest_scores(limit)
+async def root(request:Request, limit:int=20, window:int=7):
+    now = datetime.now()
+    current_ts = dt_day_shift_ts(now, 0)
+    curr_min_ts = dt_day_shift_ts(now, -1 * (window + 1))
+    data = db.select_prev_days_scores(limit, curr_min_ts, current_ts)
     context = {"request": request,
                "data": data,
                "ts_to_datestr": ts_to_datestr,

@@ -1,4 +1,7 @@
+from datetime import datetime
 import sqlite3
+
+from backend.helpers import dt_day_shift_ts
 
 con = sqlite3.connect("./data/scraper.db", check_same_thread=False)
 
@@ -349,26 +352,17 @@ def update_symbol_own(symbol: str):
                     """, [symbol])
 
 if __name__ == "__main__":
-    # drop_eod_table()
-    # create_eod_table()
+    old = select_latest_scores(20)
+    now = datetime.now()
+    current_ts = dt_day_shift_ts(now, 0)
+    curr_min_ts = dt_day_shift_ts(now, -8)
+    new = select_prev_days_scores(20, curr_min_ts, current_ts)
+    
+    print(f"old: ")
+    for row in old:
+        print(row)
+    print("=====================================")
+    print("new: ")
+    for row in new:
+        print(row)
 
-    sql = view_daily_scores()
-    print(f"generated sql: {sql}")
-    # tablenames = con.execute("SELECT name FROM sqlite_master").fetchall()
-    # print(tablenames)
-    # if len(tablenames):
-    #     assert f"ticker_eod" in [table["name"] for table in tablenames]
-    # else:
-    #     print("No tables exist")
-    # data = select_latest_scores(10)
-    # print(data)
-    # eods = get_ticker_eods()
-    # for d in eods:
-    #     print(d)
-
-#   aapl = get_ticker("AAPL")
-#   print(aapl)
-
-    # # print(today_eod[0][0])
-    # for row in today_eod[0]:
-    #     print(row)
