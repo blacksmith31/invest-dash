@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
@@ -15,13 +16,13 @@ from pathlib import Path
 from backend import db
 from backend.helpers import (
     day_scores_compare,
+    dt_day_shift_ts,
     fmt_currency_word, 
     from_json,
     ts_to_str, 
     score_round, 
     fmt_currency,
-    days_ago_to_ts,
-    ts_day_shift
+    days_ago_to_ts
 )
 from backend.updater import update
 from backend.symbols import symbol_update
@@ -108,11 +109,14 @@ async def changes(request: Request, limit:int=20, days:int=7, window:int=7):
                                       context)
 
 @app.get("/changes_json", status_code=200, response_class=JSONResponse)
-async def changes_json(limit:int=20, days:int=7, window:int=7):
-    current_ts = days_ago_to_ts(0)
-    prev_max_ts = days_ago_to_ts(days)
-    curr_min_ts = ts_day_shift(current_ts, window)
-    prev_min_ts = ts_day_shift(prev_max_ts, window)
+async def changes_json(limit:int=20, days:int=7, window:int=8):
+    now = datetime.now()
+    current_ts = dt_day_shift_ts(now, 0)
+    curr_min_ts = dt_day_shift_ts(now, -1 * window)
+    prev_max_dt = now - timedelta(days=days+1)
+    prev_max_ts = dt_day_shift_ts(prev_max_dt, 0)
+    prev_min_ts = dt_day_shift_ts(prev_max_dt, -1 * window)
+    print(f"curr ts: {current_ts}, curr min: {curr_min_ts}, prev max dt: {prev_max_dt}, prev max ts: {prev_max_ts}, prev min: {prev_min_ts}")
     current = db.select_prev_days_scores(limit=limit, min_ts=curr_min_ts, max_ts=current_ts)
     past = db.select_prev_days_scores(limit=limit, min_ts=prev_min_ts, max_ts=prev_max_ts)
     added, removed = day_scores_compare(current, past)
