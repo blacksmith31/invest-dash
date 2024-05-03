@@ -1,25 +1,32 @@
 from datetime import datetime, timedelta
 import json
 import math
+from typing import List
 
 from backend.dtz import Eastern
 
 def ts_to_str(ts: float):
     return datetime.fromtimestamp(ts).strftime("%Y/%m/%d %H:%M:%S")
 
-def start_of_day(dt: datetime):
+def ts_to_datestr(ts: float | int):
+    return datetime.fromtimestamp(ts).strftime("%Y/%m/%d")
+
+def start_of_day(dt: datetime) -> datetime:
+    """
+    Expects a datetime with tz=Eastern
+    """
     return dt.replace(hour=9, minute=30, second=0, microsecond=0)
 
-def days_ago_to_ts(days: int):
-    day_start = start_of_day(datetime.now()).astimezone(Eastern)
-    return math.floor(datetime.timestamp(day_start - timedelta(days=days)))
-
-def dt_day_shift_ts(dt:datetime, days: int):
+def dt_day_shift_ts(dt:datetime, days: int) -> int:
+    """
+    Expects a datetime in local time 
+    """
     dt_east = dt.astimezone(Eastern)
     day_start = start_of_day(dt_east)
     return math.floor(datetime.timestamp(day_start + timedelta(days=days)))
 
 def day_scores_compare(current, previous):
+    # TODO: use type list[TickerDate]
     curr_tickers = [item["ticker"] for item in current]
     prev_tickers = [item["ticker"] for item in previous]
     added = [item for item in current if item["ticker"] not in prev_tickers]

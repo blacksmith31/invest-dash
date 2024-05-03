@@ -28,7 +28,7 @@
 					</div>
 					{% for row in data %}
 					<div class="row rhover" hx-get="/chart_data" hx-target=".chart-container" hx-vals='{"ticker": "{{ row.ticker }}"}'>
-						<div class="rdata">{{ ts_to_str(row.ts) }}</div>
+						<div class="rdata">{{ ts_to_datestr(row.ts) }}</div>
 						<div class="rdata">{{ row.ticker }}</div>
 						<div class="rdata">{{ round(row.sroc)}}</div>
 					</div>

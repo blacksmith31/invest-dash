@@ -19,10 +19,10 @@ from backend.helpers import (
     dt_day_shift_ts,
     fmt_currency_word, 
     from_json,
+    ts_to_datestr,
     ts_to_str, 
     score_round, 
     fmt_currency,
-    days_ago_to_ts
 )
 from backend.updater import update
 from backend.symbols import symbol_update
@@ -67,7 +67,7 @@ async def root(request: Request, limit: int = 20):
     data = db.select_latest_scores(limit)
     context = {"request": request,
                "data": data,
-               "ts_to_str": ts_to_str,
+               "ts_to_datestr": ts_to_datestr,
                "round": score_round}
     block_name = None
     if request.headers.get("HX-Request"):
@@ -95,28 +95,30 @@ async def chart_data(request: Request, ticker: str = ''):
 
 @app.get("/changes", status_code=200, response_class=HTMLResponse)
 async def changes(request: Request, limit:int=20, days:int=7, window:int=7):
-    current_ts = days_ago_to_ts(0)
-    prev_max_ts = days_ago_to_ts(days)
-    curr_min_ts = ts_day_shift(current_ts, window)
-    prev_min_ts = ts_day_shift(prev_max_ts, window)
+    now = datetime.now()
+    current_ts = dt_day_shift_ts(now, 0)
+    curr_min_ts = dt_day_shift_ts(now, -1 * (window + 1))
+    prev_max_dt = now - timedelta(days=days+1)
+    prev_max_ts = dt_day_shift_ts(prev_max_dt, 0)
+    prev_min_ts = dt_day_shift_ts(prev_max_dt, -1 * (window + 1))
     current = db.select_prev_days_scores(limit=limit, min_ts=curr_min_ts, max_ts=current_ts)
     past = db.select_prev_days_scores(limit=limit, min_ts=prev_min_ts, max_ts=prev_max_ts)
     added, removed = day_scores_compare(current, past)
     context = {"request": request,
+               "ts_to_datestr": ts_to_datestr,
                "added_symbols": added,
                "removed_symbols": removed}
     return templates.TemplateResponse("changes.html",
                                       context)
 
 @app.get("/changes_json", status_code=200, response_class=JSONResponse)
-async def changes_json(limit:int=20, days:int=7, window:int=8):
+async def changes_json(limit:int=20, days:int=7, window:int=7):
     now = datetime.now()
     current_ts = dt_day_shift_ts(now, 0)
-    curr_min_ts = dt_day_shift_ts(now, -1 * window)
+    curr_min_ts = dt_day_shift_ts(now, -1 * (window + 1))
     prev_max_dt = now - timedelta(days=days+1)
     prev_max_ts = dt_day_shift_ts(prev_max_dt, 0)
-    prev_min_ts = dt_day_shift_ts(prev_max_dt, -1 * window)
-    print(f"curr ts: {current_ts}, curr min: {curr_min_ts}, prev max dt: {prev_max_dt}, prev max ts: {prev_max_ts}, prev min: {prev_min_ts}")
+    prev_min_ts = dt_day_shift_ts(prev_max_dt, -1 * (window + 1))
     current = db.select_prev_days_scores(limit=limit, min_ts=curr_min_ts, max_ts=current_ts)
     past = db.select_prev_days_scores(limit=limit, min_ts=prev_min_ts, max_ts=prev_max_ts)
     added, removed = day_scores_compare(current, past)
