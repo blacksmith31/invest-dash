@@ -47,23 +47,6 @@ def drop_table(name: str):
         print("failed to drop table")
 
 
-# def get_recent_eods():
-#     try:
-#         with con:
-#             result = con.execute("""
-#                 SELECT timestamp, 
-#                        ticker, 
-#                        close,
-#                        max(sroc)
-#                   FROM ticker_history
-#                  WHERE sroc > 60
-#                  GROUP BY ticker
-#             """).fetchall()
-#             return result
-#     except sqlite3.DatabaseError:
-#         raise
-
-
 def select_sorted_closes():
     try:
         with con:
@@ -127,22 +110,22 @@ def select_ticker_scores(ticker: str) -> list[dict]:
         raise
 
 
-def select_latest_scores(limit: int) -> list[dict]:
-    try:
-        with con:
-            result = con.execute("""
-            SELECT max(timestamp) ts
-                   ,ticker
-                   ,sroc
-              FROM ticker_history
-             WHERE timestamp > strftime('%s', 'now', 'start of day', '-7 days')
-          GROUP BY ticker
-          ORDER BY sroc DESC
-             LIMIT ?
-             """, [limit]).fetchall()
-            return result
-    except sqlite3.DatabaseError:
-        raise
+# def select_latest_scores(limit: int) -> list[dict]:
+#     try:
+#         with con:
+#             result = con.execute("""
+#             SELECT max(timestamp) ts
+#                    ,ticker
+#                    ,sroc
+#               FROM ticker_history
+#              WHERE timestamp > strftime('%s', 'now', 'start of day', '-7 days')
+#           GROUP BY ticker
+#           ORDER BY sroc DESC
+#              LIMIT ?
+#              """, [limit]).fetchall()
+#             return result
+#     except sqlite3.DatabaseError:
+#         raise
 
 
 def select_prev_days_scores(limit: int, min_ts:int, max_ts:int) -> list[dict]:
@@ -175,17 +158,17 @@ def select_max_ticker_ts(ticker: str) -> list[dict]:
         return result
 
 
-def insert_ticker_close(ticker: str, timestamp: int, close: float) -> None:
-    with con:
-        con.execute("""
-            INSERT INTO ticker_history (
-                        timestamp,
-                        ticker,
-                        close)
-                 VALUES (?, ?, ?)
-            ON CONFLICT (timestamp, ticker) DO NOTHING
-        """, [timestamp, ticker, close])
-        return None
+# def insert_ticker_close(ticker: str, timestamp: int, close: float) -> None:
+#     with con:
+#         con.execute("""
+#             INSERT INTO ticker_history (
+#                         timestamp,
+#                         ticker,
+#                         close)
+#                  VALUES (?, ?, ?)
+#             ON CONFLICT (timestamp, ticker) DO NOTHING
+#         """, [timestamp, ticker, close])
+#         return None
 
 
 def insert_closes_many(data: list[tuple]) -> None:
@@ -202,15 +185,15 @@ def insert_closes_many(data: list[tuple]) -> None:
         return None
 
 
-def update_ticker_sroc(ticker: str, ts: int, sroc: float) -> None:
-    with con:
-        con.execute("""
-            UPDATE ticker_history
-               SET sroc = ?
-             WHERE timestamp = ?
-               AND ticker = ?
-        """, [sroc, ts, ticker])
-        return None
+# def update_ticker_sroc(ticker: str, ts: int, sroc: float) -> None:
+#     with con:
+#         con.execute("""
+#             UPDATE ticker_history
+#                SET sroc = ?
+#              WHERE timestamp = ?
+#                AND ticker = ?
+#         """, [sroc, ts, ticker])
+#         return None
 
 
 def update_sroc_many(data: list[dict]) -> None:
