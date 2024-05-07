@@ -20,10 +20,10 @@ from backend.helpers import (
     ts_to_datestr,
     ts_to_str, 
     score_round, 
-    fmt_currency,
 )
 from backend.updater import update
 from backend.symbols import symbol_update
+from routers.api import router as api_router
 
 logging.basicConfig()
 logging.getLogger('apscheduler').setLevel(logging.DEBUG)
@@ -48,6 +48,7 @@ async def lifespan(app: FastAPI):
     # do stuff at shutdown here
     
 app = FastAPI(lifespan=lifespan)
+app.include_router(api_router)
 app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
 
 origins = ["*"]
@@ -112,32 +113,11 @@ async def changes(request: Request, limit:int=20, days:int=7, window:int=7):
     return templates.TemplateResponse("changes.html",
                                       context)
 
-@app.get("/changes_json", status_code=200, response_class=JSONResponse)
-async def changes_json(limit:int=20, days:int=7, window:int=7):
-    now = datetime.now()
-    current_ts = dt_day_shift_ts(now, 0)
-    curr_min_ts = dt_day_shift_ts(now, -1 * (window + 1))
-    prev_max_dt = now - timedelta(days=days+1)
-    prev_max_ts = dt_day_shift_ts(prev_max_dt, 0)
-    prev_min_ts = dt_day_shift_ts(prev_max_dt, -1 * (window + 1))
-    current = db.select_prev_days_scores(limit=limit, min_ts=curr_min_ts, max_ts=current_ts)
-    past = db.select_prev_days_scores(limit=limit, min_ts=prev_min_ts, max_ts=prev_max_ts)
-    added, removed = day_scores_compare(current, past)
-    return current, past, added, removed
-
-@app.get("/symbols_html", status_code=200, response_class=HTMLResponse)
-def symbols_html(request: Request):
-    data = db.view_symbol_hdr()
+@app.get("/symbols_hdr", status_code=200, response_class=HTMLResponse)
+def symbols_hdr(request: Request, limit:int=1000):
+    data = db.view_symbol_hdr(limit=limit)
     context = {"request": request,
                "fmt_currency": fmt_currency_word,
-               "data": data}
-    return templates.TemplateResponse("view_symbol_hdr.html", context)
-
-@app.get("/symbols_hdr", status_code=200, response_class=HTMLResponse)
-def symbols_hdr(request: Request):
-    data = db.view_symbol_hdr(limit=1000)
-    context = {"request": request,
-               "fmt_currency": fmt_currency,
                "data": data}
     return templates.TemplateResponse("view_symbol_hdr.html", context)
 
