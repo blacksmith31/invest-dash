@@ -80,11 +80,12 @@ def select_ticker_history(ticker: str):
         raise
 
 
-def select_ticker_closes(ticker: str) -> list[dict]:
+def select_ticker_closes(ticker: str):
     try:
         with con:
             result = con.execute("""
-            SELECT timestamp,
+            SELECT ticker,
+                   timestamp,
                    close
               FROM ticker_history
              WHERE ticker = ?
@@ -99,8 +100,9 @@ def select_ticker_scores(ticker: str) -> list[dict]:
     try:
         with con:
             result = con.execute("""
-            SELECT timestamp x,
-                   IFNULL(sroc, 'null') y
+            SELECT ticker,
+                   timestamp,
+                   sroc
               FROM ticker_history
              WHERE ticker = ?
           ORDER BY timestamp
@@ -132,7 +134,7 @@ def select_prev_days_scores(limit: int, min_ts:int, max_ts:int) -> list[dict]:
     try:
         with con:
             result = con.execute("""
-            SELECT max(timestamp) ts
+            SELECT max(timestamp) timestamp
                    ,ticker
                    ,sroc
               FROM ticker_history
@@ -261,15 +263,15 @@ def insert_update_sym_hdr(data: list[dict]) -> None:
         """, data)
         return None
 
-def select_top_symbols_mcap(n: int = 1000):
+def select_top_symbols_mcap(n:int=1000):
     try:
         with con:
             result = con.execute("""
-                                 SELECT symbol
-                                 FROM symbol_hdr
-                                 ORDER BY mktcap DESC
-                                 LIMIT ?
-                                 """, [n]).fetchall()
+                 SELECT symbol
+                 FROM symbol_hdr
+                 ORDER BY mktcap DESC
+                 LIMIT ?
+                 """, [n]).fetchall()
             return result
     except:
         raise
@@ -335,17 +337,18 @@ def update_symbol_own(symbol: str):
                     """, [symbol])
 
 if __name__ == "__main__":
-    old = select_latest_scores(20)
-    now = datetime.now()
-    current_ts = dt_day_shift_ts(now, 0)
-    curr_min_ts = dt_day_shift_ts(now, -8)
-    new = select_prev_days_scores(20, curr_min_ts, current_ts)
-    
-    print(f"old: ")
-    for row in old:
-        print(row)
-    print("=====================================")
-    print("new: ")
-    for row in new:
-        print(row)
+    # old = select_latest_scores(20)
+    print(select_ticker_scores("MSFT"))
+    # now = datetime.now()
+    # current_ts = dt_day_shift_ts(now, 0)
+    # curr_min_ts = dt_day_shift_ts(now, -8)
+    # new = select_prev_days_scores(20, curr_min_ts, current_ts)
+    # 
+    # print(f"old: ")
+    # # for row in old:
+    # #     print(row)
+    # print("=====================================")
+    # print("new: ")
+    # for row in new:
+    #     print(row)
 

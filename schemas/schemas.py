@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Optional
 from pydantic import BaseModel, Field
 
 
@@ -11,7 +12,7 @@ class TrackingStatus(Enum):
 
 class TickerDay(BaseModel):
     ticker: str = Field(max_length=7)
-    ts: float
+    timestamp: float
 
 
 class TickerDayClose(TickerDay):
@@ -19,7 +20,7 @@ class TickerDayClose(TickerDay):
 
 
 class TickerDayScore(TickerDay):
-    score: float = Field(default=0, alias="sroc")
+    score: Optional[float] = Field(default=None, alias="sroc")
 
 
 class TickerDayScoredClose(TickerDay):

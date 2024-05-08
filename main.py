@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from jinja2_fragments.fastapi import Jinja2Blocks
 import logging
@@ -62,7 +62,7 @@ app.add_middleware(
 
 
 @app.get("/", status_code=200, response_class=HTMLResponse)
-async def root(request:Request, limit:int=20, window:int=7):
+async def root(request:Request, window:int=7, limit:int=20):
     now = datetime.now()
     current_ts = dt_day_shift_ts(now, 0)
     curr_min_ts = dt_day_shift_ts(now, -1 * (window + 1))
@@ -133,34 +133,4 @@ def view_daily_scores(request: Request, days: int = 7):
                "col_names": col_names,
                "data": sorted_data}
     return templates.TemplateResponse("view_daily_scores.html", context)
-
-@app.get("/symbols", status_code=200, response_class=JSONResponse)
-def symbols():
-    data = db.view_symbol_hdr()
-    return data
-
-@app.get("/top_symbols/", status_code=200, response_class=JSONResponse)
-def top_n_symbols(n:int=1000):
-    # http://localhost:8080/top_symbols/?n=10
-    data = db.select_top_symbols_mcap(n)
-    return data
-
-@app.get("/tickers/close")
-def get_tickers():
-    result = db.select_sorted_closes()
-    return result
-
-
-@app.get("/tickers/{symbol}/close")
-def get_ticker(symbol: str):
-    result = db.select_ticker_closes(symbol)
-    return result
-
-
-@app.get("/tickers/{symbol}/scores")
-def get_score(symbol: str):
-    result = db.select_ticker_scores(symbol)
-    return result
-
-
 
