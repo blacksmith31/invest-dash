@@ -79,13 +79,16 @@ def _daily_close_history(ticker:str, period:str='', interval:str='1d',
     except KeyError:
         print(f'KeyError for closes at path `rj["chart"]["result"][0]["indicators"]["adjclose"][0]["adjclose"]`: {json.dumps(rj, indent=2)}')
         return []
-    ticker_days = [{"ticker": ticker, "timestamp": timestamp, "close": close} for ticker, timestamp, close in zip([ticker] * len(timestamps), timestamps, closes)]
-    # return list(zip(timestamps, [ticker] * len(timestamps), closes))
 
+    days_tup = zip([ticker] * len(timestamps), timestamps, closes)
+    ticker_days = [
+        {"ticker": ticker, "timestamp": timestamp, "close": close} 
+        for ticker, timestamp, close in days_tup
+    ]
     return ticker_days
 
 def main():
-    data = _daily_close_history('AMZN', '10d')
+    # data = _daily_close_history('AMZN', '10d')
     # start = int(datetime(year=2023, month=9, day=1).timestamp())
     # end = int(datetime(year=2022, month=9, day=20).timestamp())
     # data = _daily_close_history('amzn', end=end)
@@ -93,8 +96,11 @@ def main():
     # ts = int(datetime.now().timestamp())
     # print((ts - prevts) / 86400)
     
-    for k in data:
-        print(k)
+    # for k in data:
+    #     print(k)
+    data = get_days_history('AMZN', 10) 
+    dumped = [day.model_dump() for day in data]
+    print(dumped)
 
 if __name__ == "__main__":
     main()
