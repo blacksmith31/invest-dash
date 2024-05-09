@@ -1,9 +1,7 @@
-from datetime import datetime
+from collections.abc import Sequence
 import sqlite3
-from typing import List
 
 from schemas.schemas import TickerDayClose
-from backend.helpers import dt_day_shift_ts
 
 con = sqlite3.connect("./data/scraper.db", check_same_thread=False)
 
@@ -175,8 +173,8 @@ def select_max_ticker_ts(ticker: str) -> list[dict]:
 #         return None
 
 
-def insert_closes_many(data: List[TickerDayClose]) -> None:
-    dumped = [day.model_dump() for day in data]
+def insert_closes_many(history: Sequence[TickerDayClose]) -> None:
+    dumped = [day.model_dump() for day in history]
     with con:
         con.executemany(f"""
             INSERT INTO ticker_history (

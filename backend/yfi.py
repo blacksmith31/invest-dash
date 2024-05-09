@@ -1,14 +1,17 @@
+from collections.abc import Sequence
 from datetime import datetime, timezone, timedelta
 import json
 import requests
 from typing import List
 
 from schemas.schemas import TickerDayClose
+
+
 _BASE_URL_ = 'https://query2.finance.yahoo.com'
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
 
 
-def get_days_history(ticker: str, days: int) -> List[TickerDayClose]:
+def get_days_history(ticker: str, days: int) -> Sequence[TickerDayClose]:
     daystr = str(days) + 'd'
     data = _daily_close_history(ticker, period=daystr)
     models = [TickerDayClose.model_validate(day) for day in data]
