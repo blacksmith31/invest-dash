@@ -1,20 +1,22 @@
 from datetime import datetime, timezone, timedelta
 import json
 import requests
-from typing import List, Tuple
+from typing import List
 
+from schemas.schemas import TickerDayClose
 _BASE_URL_ = 'https://query2.finance.yahoo.com'
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
 
 
-def get_days_history(ticker: str, days: int) -> list[tuple]:
+def get_days_history(ticker: str, days: int) -> List[TickerDayClose]:
     daystr = str(days) + 'd'
     data = _daily_close_history(ticker, period=daystr)
-    return data
+    models = [TickerDayClose.model_validate(day) for day in data]
+    return models
 
 
 def _daily_close_history(ticker:str, period:str='', interval:str='1d', 
-            start:int=0, end:int=0, timeout:int=10) -> List[Tuple]:
+            start:int=0, end:int=0, timeout:int=10) -> List[dict]:
     """
     Args:
         ticker(str): 
@@ -77,18 +79,19 @@ def _daily_close_history(ticker:str, period:str='', interval:str='1d',
     except KeyError:
         print(f'KeyError for closes at path `rj["chart"]["result"][0]["indicators"]["adjclose"][0]["adjclose"]`: {json.dumps(rj, indent=2)}')
         return []
+    ticker_days = [{"ticker": ticker, "timestamp": timestamp, "close": close} for ticker, timestamp, close in zip([ticker] * len(timestamps), timestamps, closes)]
+    # return list(zip(timestamps, [ticker] * len(timestamps), closes))
 
-    return list(zip(timestamps, [ticker] * len(timestamps), closes))
-
+    return ticker_days
 
 def main():
     data = _daily_close_history('AMZN', '10d')
     # start = int(datetime(year=2023, month=9, day=1).timestamp())
     # end = int(datetime(year=2022, month=9, day=20).timestamp())
     # data = _daily_close_history('amzn', end=end)
-    prevts = 1694698200
-    ts = int(datetime.now().timestamp())
-    print((ts - prevts) / 86400)
+    # prevts = 1694698200
+    # ts = int(datetime.now().timestamp())
+    # print((ts - prevts) / 86400)
     
     for k in data:
         print(k)

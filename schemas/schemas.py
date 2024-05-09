@@ -12,7 +12,7 @@ class TrackingStatus(Enum):
 
 class TickerDay(BaseModel):
     ticker: str = Field(max_length=7)
-    timestamp: float
+    timestamp: int
 
 
 class TickerDayClose(TickerDay):
