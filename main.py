@@ -63,7 +63,7 @@ app.add_middleware(
 
 @app.get("/", status_code=200, response_class=HTMLResponse)
 async def root(request:Request, window:int=7, limit:int=20):
-    now = datetime.now()
+    now = datetime.now() - timedelta(days=1)
     current_ts = dt_day_shift_ts(now, 0)
     curr_min_ts = dt_day_shift_ts(now, -1 * (window + 1))
     data = db.select_prev_days_scores(limit, curr_min_ts, current_ts)
@@ -97,10 +97,10 @@ async def chart_data(request: Request, ticker: str = ''):
 
 @app.get("/changes", status_code=200, response_class=HTMLResponse)
 async def changes(request: Request, limit:int=20, days:int=7, window:int=7):
-    now = datetime.now()
+    now = datetime.now() - timedelta(days=1)
     current_ts = dt_day_shift_ts(now, 0)
     curr_min_ts = dt_day_shift_ts(now, -1 * (window + 1))
-    prev_max_dt = now - timedelta(days=days+1)
+    prev_max_dt = now - timedelta(days=days+2)
     prev_max_ts = dt_day_shift_ts(prev_max_dt, 0)
     prev_min_ts = dt_day_shift_ts(prev_max_dt, -1 * (window + 1))
     current = db.select_prev_days_scores(limit=limit, min_ts=curr_min_ts, max_ts=current_ts)

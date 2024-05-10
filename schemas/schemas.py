@@ -31,7 +31,7 @@ class TickerDayScoredClose(TickerDay):
 class Symbol(BaseModel):
     symbol: str = Field(max_length=7)
     name: str
-    mktcap: float
+    mktcap: int = Field(alias="marketCap")
     country: str
     industry: str
     sector: str

@@ -1,10 +1,13 @@
+from collections.abc import Sequence
 import requests
+from typing import List
 from backend.db import (
     insert_update_sym_hdr, 
     update_symbol_own, 
     update_prev_pos, 
     update_symbols_autotrack
 )
+from schemas.schemas import Symbol
 
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
 
@@ -31,17 +34,18 @@ def get_symbols(timeout:int=10000):
         response_data += response.json()
     return response_data
 
-def prep_syms(syms: list[dict]):
+def prep_syms(syms: List[dict]) -> Sequence[Symbol]:
     updated = []
-    keys = ["symbol", "name", "marketCap", "country", "industry", "sector"]
+    # keys = ["symbol", "name", "marketCap", "country", "industry", "sector"]
     for sym in syms: 
-        new = {key: sym[key] for key in keys}
+        # new = {key: sym[key] for key in keys}
         try:
-            new["marketCap"] = int(float(new["marketCap"])) 
+            # new["marketCap"] = int(float(new["marketCap"])) 
+            new = Symbol.model_validate(sym)
             updated.append(new)
-        except ValueError:
-            #print(f"Bad market cap value : {new['marketCap']} for {new['symbol']}")
-            continue
+            
+        except:
+            raise
     return updated
 
 def symbol_update():
@@ -56,15 +60,20 @@ def symbol_update():
 
 def test():
     # update previous position
-    update_prev_pos()
+    # update_prev_pos()
     # update new mktcap
     syms = get_symbols()
+    print(f"type: {type(syms)}")
+    print(f"type of item: {type(syms[0])}")
     toins = prep_syms(syms[:5])
-    toins[0]["marketCap"] = 999999999
-    insert_update_sym_hdr(toins)
-    #toggle_own("AE")
-    # update tracked status
-    update_symbols_autotrack(3)
+    print(f"sym models: ")
+    for model in toins:
+        print(model)
+    # toins[0]["marketCap"] = 999999999
+    # insert_update_sym_hdr(toins)
+    # #toggle_own("AE")
+    # # update tracked status
+    # update_symbols_autotrack(3)
 
 if __name__ == "__main__":
     test()

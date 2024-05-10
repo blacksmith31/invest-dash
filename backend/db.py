@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 import sqlite3
 
-from schemas.schemas import TickerDayClose
+from schemas.schemas import Symbol, TickerDayClose
 
 con = sqlite3.connect("./data/scraper.db", check_same_thread=False)
 
@@ -243,7 +243,8 @@ def prune_ticker_history(min_ts: int) -> None:
                     """, [min_ts])
         return None
 
-def insert_update_sym_hdr(data: list[dict]) -> None:
+def insert_update_sym_hdr(data: Sequence[Symbol]) -> None:
+    dumped = [sym.model_dump() for sym in data]
     with con:
         con.executemany("""
             INSERT INTO symbol_hdr (
@@ -262,7 +263,7 @@ def insert_update_sym_hdr(data: list[dict]) -> None:
                     :sector
             ) ON CONFLICT(symbol) DO UPDATE
             SET mktcap = excluded.mktcap
-        """, data)
+        """, dumped)
         return None
 
 def select_top_symbols_mcap(n:int=1000):
