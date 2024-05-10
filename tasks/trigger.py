@@ -1,5 +1,6 @@
 from datetime import datetime
 from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.cron.expressions import AllExpression, RangeExpression, WeekdayRangeExpression
 
 class ContinuousSubweekly(CronTrigger):
     def __init__(self, year='*', month='*', day='*', week=None, 
@@ -11,18 +12,45 @@ class ContinuousSubweekly(CronTrigger):
 
     @property
     def daily_executions(self):
+        hour_count = 0
         for field in self.fields:
             # count hours
             if field.name == 'hour':
+                print(f"Found hour field")
                 # get each expression if more than 1
-                # sum the hours from each
-                get_expr_count()
+                exprs = field.expressions
+                for expr in exprs:
+                    # sum the hours from each
+                    hour_count += self._expr_count(expr)
+                    print(f"hour count: {hour_count}")
             # count minutes
             # count seconds
             # seconds * minutes * hours
+        return hour_count
 
     def get_fields(self):
         return self.fields
+    
+    def _expr_count(self, expr: AllExpression) -> int:
+        if isinstance(expr, RangeExpression):
+            print(f"this is a RangeExpression")
+            last = int(expr.last) if expr.last else 0
+            first = int(expr.first) if expr.first else 0
+            step = expr.step
+            count: int
+            if last == first:
+                # single value
+                print(f"last {last} = first")
+                count = 1
+            else:
+                # range inclusive
+                count = last - first + 1
+                if step is not None:
+                    count = count // step
+            print(f"final count: {count}")
+        else:
+            count = 0
+        return count
 
 def test():
     t = ContinuousSubweekly(day_of_week='sat', hour='2', minute='0', timezone='US/Eastern')
@@ -31,6 +59,7 @@ def test():
     for field in fields:
         print(field.expressions)
     print(t.get_next_fire_time(None, datetime.now()))
+    print(f"Daily: {t.daily_executions}")
 
 if __name__ == "__main__":
     test()
