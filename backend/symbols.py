@@ -43,8 +43,8 @@ def prep_syms(syms: List[dict]) -> Sequence[Symbol]:
             # new["marketCap"] = int(float(new["marketCap"])) 
             new = Symbol.model_validate(sym)
             updated.append(new)
-            
         except:
+            print(f"Symbol Update| input symbol: {sym['symbol']}, mktcap: {sym['marketCap']}")
             raise
     return updated
 
@@ -76,5 +76,5 @@ def test():
     # update_symbols_autotrack(3)
 
 if __name__ == "__main__":
-    test()
-
+    # test()
+    symbol_update()

@@ -1,6 +1,6 @@
 from enum import Enum
-from typing import Optional
-from pydantic import BaseModel, Field
+from typing import Optional, Annotated
+from pydantic import BaseModel, Field, BeforeValidator
 
 
 class TrackingStatus(Enum):
@@ -27,11 +27,21 @@ class TickerDayScoredClose(TickerDay):
     close: float = Field(gt=0)
     score: float = Field(default=0, alias="sroc")
 
+def str_to_int(v: str) -> int:
+    if v == '':
+        return 0
+    try:
+        return int(float(v))
+    except ValueError:
+        return -1
+
+MktCap = Annotated[int, BeforeValidator(str_to_int)]
+Sym = Annotated[str, BeforeValidator(lambda v: v.strip())]
 
 class Symbol(BaseModel):
-    symbol: str = Field(max_length=7)
+    symbol: Sym = Field(max_length=7)
     name: str
-    mktcap: int = Field(alias="marketCap")
+    mktcap: MktCap = Field(alias="marketCap")
     country: str
     industry: str
     sector: str

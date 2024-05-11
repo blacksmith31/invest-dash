@@ -13,6 +13,8 @@ class ContinuousSubweekly(CronTrigger):
     @property
     def daily_executions(self):
         hour_count = 0
+        minute_count = 0
+        second_count = 0
         for field in self.fields:
             # count hours
             if field.name == 'hour':
@@ -40,7 +42,6 @@ class ContinuousSubweekly(CronTrigger):
             count: int
             if last == first:
                 # single value
-                print(f"last {last} = first")
                 count = 1
             else:
                 # range inclusive
@@ -53,7 +54,7 @@ class ContinuousSubweekly(CronTrigger):
         return count
 
 def test():
-    t = ContinuousSubweekly(day_of_week='sat', hour='2', minute='0', timezone='US/Eastern')
+    t = ContinuousSubweekly(day_of_week='sat', hour='*/2', minute='10-50/5', timezone='US/Eastern')
     fields = t.get_fields() 
     print(fields)
     for field in fields:

@@ -257,7 +257,7 @@ def insert_update_sym_hdr(data: Sequence[Symbol]) -> None:
             ) VALUES (
                     :symbol,
                     :name,
-                    :marketCap,
+                    :mktcap,
                     :country,
                     :industry,
                     :sector
