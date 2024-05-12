@@ -34,9 +34,6 @@ class ContinuousSubweekly(CronTrigger):
         # seconds * minutes * hours
         return hour_count * minute_count * second_count
 
-    def get_fields(self):
-        return self.fields
-    
     def _expr_count(self, exprs: List[AllExpression], field_name: str) -> int:
         count = 0
         for expr in exprs:
