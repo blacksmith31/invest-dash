@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import List
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.cron.expressions import AllExpression, RangeExpression, WeekdayRangeExpression
 
@@ -11,50 +12,73 @@ class ContinuousSubweekly(CronTrigger):
                  jitter=None)
 
     @property
-    def daily_executions(self):
+    def daily_executions(self) -> int:
         hour_count = 0
         minute_count = 0
         second_count = 0
         for field in self.fields:
             # count hours
+            exprs = field.expressions
             if field.name == 'hour':
                 print(f"Found hour field")
                 # get each expression if more than 1
-                exprs = field.expressions
-                for expr in exprs:
-                    # sum the hours from each
-                    hour_count += self._expr_count(expr)
-                    print(f"hour count: {hour_count}")
+                hour_count = self._expr_count(exprs, 'hour')
             # count minutes
+            elif field.name == "minute":
+                print(f"found minute field: {field}")
+                minute_count = self._expr_count(exprs, "minute")
             # count seconds
-            # seconds * minutes * hours
-        return hour_count
+            elif field.name == "second":
+                print(f"found second field: {field}")
+                second_count = self._expr_count(exprs, "second")
+        # seconds * minutes * hours
+        return hour_count * minute_count * second_count
 
     def get_fields(self):
         return self.fields
     
-    def _expr_count(self, expr: AllExpression) -> int:
-        if isinstance(expr, RangeExpression):
-            print(f"this is a RangeExpression")
-            last = int(expr.last) if expr.last else 0
-            first = int(expr.first) if expr.first else 0
-            step = expr.step
-            count: int
-            if last == first:
-                # single value
-                count = 1
+    def _expr_count(self, exprs: List[AllExpression], field_name: str) -> int:
+        count = 0
+        for expr in exprs:
+            # sum the hours from each
+            if isinstance(expr, RangeExpression):
+            # if type(expr) is RangeExpression:
+                print(f"this is a RangeExpression")
+                count += self._range_expr_counter(expr)
+            elif type(expr) is AllExpression:
+                print(f"parent type all expression {expr}")
+                count += self._all_expr_counter(expr, field_name)
             else:
-                # range inclusive
-                count = last - first + 1
-                if step is not None:
-                    count = count // step
-            print(f"final count: {count}")
+                # WeekdayPositionExpression, LastDayOfMonthExpression
+                raise TypeError(f"type {type(expr)} not handled")
+        if count:
+            return count
+        return 0
+
+    def _range_expr_counter(self, expr: RangeExpression) -> int:
+        last = int(expr.last) if expr.last else 0
+        first = int(expr.first) if expr.first else 0
+        step = expr.step
+        if last == first:
+            # single value
+            count = 1
         else:
-            count = 0
+            # range inclusive
+            count = last - first + 1
+            if step is not None:
+                count = count // step
+        print(f"final range expr count: {count}")
+        return count
+    
+    def _all_expr_counter(self, expr: AllExpression, field_name: str) -> int:
+        qty_map = {"day_of_week": 7, "hour": 24, "minute": 60, "second": 60}
+        count = qty_map[field_name]
+        if expr.step:
+            count //= expr.step
         return count
 
 def test():
-    t = ContinuousSubweekly(day_of_week='sat', hour='*/2', minute='10-50/5', timezone='US/Eastern')
+    t = ContinuousSubweekly(day_of_week='sat', hour=None, minute='10-50/5', timezone='US/Eastern')
     fields = t.get_fields() 
     print(fields)
     for field in fields:
