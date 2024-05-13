@@ -13,9 +13,9 @@ class ContinuousSubweekly(CronTrigger):
 
     @property
     def daily_executions(self) -> int:
-        hour_count = 0
-        minute_count = 0
-        second_count = 0
+        hour_count = 1
+        minute_count = 1
+        second_count = 1
         for field in self.fields:
             # count hours
             exprs = field.expressions
@@ -33,6 +33,19 @@ class ContinuousSubweekly(CronTrigger):
                 second_count = self._expr_count(exprs, "second")
         # seconds * minutes * hours
         return hour_count * minute_count * second_count
+
+    @property
+    def days_per_week(self) -> int:
+        day_count = 1
+        for field in self.fields:
+            exprs = field.expressions
+            if field.name == 'day_of_week':
+                day_count = self._expr_count(exprs, 'day_of_week')
+        return day_count
+
+    @property
+    def weekly_executions(self) -> int:
+        return self.days_per_week * self.daily_executions
 
     def _expr_count(self, exprs: List[AllExpression], field_name: str) -> int:
         count = 0
