@@ -1,26 +1,25 @@
 
 from abc import ABC, abstractmethod
-from typing import List
+from typing import TYPE_CHECKING, List
 
-from .trigger import ContinuousSubweekly
+if TYPE_CHECKING:
+    from .trigger import ContinuousSubweekly
+    from tasks.resources import ResourceBase
+    from schemas.schemas import Symbol
 
 class Updater(ABC):
 
-    @abstractmethod
     def pre_fetch(self):
         raise NotImplementedError
 
-    @abstractmethod
     def fetch(self):
         raise NotImplementedError
 
-    @abstractmethod
     def post_fetch(self):
         raise NotImplementedError
 
-    @abstractmethod
     def save(self):
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def update(self):
@@ -29,23 +28,21 @@ class Updater(ABC):
 
 class SymbolUpdater(Updater):
     
-    def __init__(self, resource, trigger: ContinuousSubweekly, strategy=None):
+    def __init__(self, resource: ResourceBase, trigger: ContinuousSubweekly, strategy=None):
         self.resource = resource
         self.trigger = trigger
         self.strategy = strategy
 
-
     def fetch(self) -> List[dict]:
-        # Getting data from json
-        response = requests.get(
-            url=url,
-            headers=HEADERS,
-            timeout=timeout
-        )
-
-        if response.status_code != 200:
-            print(f"request for {url} failed")
-            return []
-        print(f"length: {len(response.json())} for {url.split('/')[-1]}")
-        response_data += response.json()
-    return response_data
+        return self.resource.get()
+    
+    def validate(self, syms: List[dict]) -> List[Symbol]:
+        updated = []
+        # keys = ["symbol", "name", "marketCap", "country", "industry", "sector"]
+        for sym in syms: 
+            try:
+                updated.append(Symbol.model_validate(sym))
+            except:
+                print(f"Symbol Update| input symbol: {sym['symbol']}, mktcap: {sym['marketCap']}")
+                raise
+        return updated
