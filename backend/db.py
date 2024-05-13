@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from typing import List
 import sqlite3
 
 from schemas.schemas import Symbol, TickerDayClose
@@ -173,7 +173,7 @@ def select_max_ticker_ts(ticker: str) -> list[dict]:
 #         return None
 
 
-def insert_closes_many(history: Sequence[TickerDayClose]) -> None:
+def insert_closes_many(history: List[TickerDayClose]) -> None:
     dumped = [day.model_dump() for day in history]
     with con:
         con.executemany(f"""
@@ -243,7 +243,7 @@ def prune_ticker_history(min_ts: int) -> None:
                     """, [min_ts])
         return None
 
-def insert_update_sym_hdr(data: Sequence[Symbol]) -> None:
+def insert_update_sym_hdr(data: List[Symbol]) -> None:
     dumped = [sym.model_dump() for sym in data]
     with con:
         con.executemany("""

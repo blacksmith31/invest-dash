@@ -1,4 +1,3 @@
-from collections.abc import Sequence
 import requests
 from typing import List
 from backend.db import (
@@ -12,7 +11,7 @@ from schemas.schemas import Symbol
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
 
 
-def get_symbols(timeout:int=10000):
+def get_symbols(timeout:int=10000) -> List[dict]:
     urls = [
         "https://raw.githubusercontent.com/jamesonhm/US-Stock-Symbols/main/amex/amex_full_tickers.json",
         "https://raw.githubusercontent.com/jamesonhm/US-Stock-Symbols/main/nasdaq/nasdaq_full_tickers.json",
@@ -34,7 +33,7 @@ def get_symbols(timeout:int=10000):
         response_data += response.json()
     return response_data
 
-def prep_syms(syms: List[dict]) -> Sequence[Symbol]:
+def prep_syms(syms: List[dict]) -> List[Symbol]:
     updated = []
     # keys = ["symbol", "name", "marketCap", "country", "industry", "sector"]
     for sym in syms: 
@@ -65,10 +64,11 @@ def test():
     syms = get_symbols()
     print(f"type: {type(syms)}")
     print(f"type of item: {type(syms[0])}")
-    toins = prep_syms(syms[:5])
-    print(f"sym models: ")
-    for model in toins:
-        print(model)
+    print(f"item: {syms[0]}")
+    # toins = prep_syms(syms[:5])
+    # print(f"sym models: ")
+    # for model in toins:
+    #     print(model)
     # toins[0]["marketCap"] = 999999999
     # insert_update_sym_hdr(toins)
     # #toggle_own("AE")
@@ -76,5 +76,5 @@ def test():
     # update_symbols_autotrack(3)
 
 if __name__ == "__main__":
-    # test()
-    symbol_update()
+    test()
+    # symbol_update()
