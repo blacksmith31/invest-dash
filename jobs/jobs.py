@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
+import random
+import time
 from typing import TYPE_CHECKING, List
 
 from schemas.schemas import Symbol, TickerDayClose
@@ -121,12 +123,16 @@ class TickerJob(JobBase):
 
     def post_fetch(self, ticker):
         # calc sroc for ticker and update sroc table
+        ### type of indicator to calculate should come from strategy?
+        ### score calculation should be a method of the strategy
         sroc_data = calc_sroc(ticker)
         return sroc_data
 
 
-    def save(self, ticker_data, sroc_data):
+    def save_ticker_days(self, ticker_data):
         insert_closes_many(ticker_data)
+
+    def save_scores(self, sroc_data):
         update_sroc_many(sroc_data)
 
     def update(self):
@@ -139,13 +145,16 @@ class TickerJob(JobBase):
             ticker_data = self.fetch(ticker, query_days)
             validated = self.validate(ticker_data)
             sroc_data = self.post_fetch(ticker)
-            self.save(validated, sroc_data)
+            self.save_ticker_days(validated)
+            self.save_scores(sroc_data)
 
         sleep_time = random.randrange(1, 10)
-        logger.info(f"sleep: {sleep_time}")
+        msg = f"sleep: {sleep_time}"
+        self.logger.info(msg) if self.logger else print(msg)
         time.sleep(sleep_time)
 
     def _get_tickerslice(self, all_tickers: List[str]) -> List[str]:
+        ### Based on #executions
         # self.trigger.daily_executions
         # self.trigger.days_per_week
         # self.trigger.weekly_executions
