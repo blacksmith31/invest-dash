@@ -1,5 +1,5 @@
 import pytest
-from tasks.trigger import ContinuousSubweekly
+from jobs.trigger import ContinuousSubweekly
 
 
 triggers = [

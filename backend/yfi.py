@@ -1,5 +1,6 @@
 from datetime import datetime, timezone, timedelta
 import json
+from pydantic import ValidationError
 import requests
 from typing import List
 
@@ -13,7 +14,13 @@ HEADERS = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleW
 def get_days_history(ticker: str, days: int) -> List[TickerDayClose]:
     daystr = str(days) + 'd'
     data = _daily_close_history(ticker, period=daystr)
-    models = [TickerDayClose.model_validate(day) for day in data]
+    models = []
+    for day in data:
+        try:
+            models.append(TickerDayClose.model_validate(day))
+        except ValidationError:
+            print(f"Validation error for ticker-day: {day}")
+            continue
     return models
 
 

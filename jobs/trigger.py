@@ -20,16 +20,16 @@ class ContinuousSubweekly(CronTrigger):
             # count hours
             exprs = field.expressions
             if field.name == 'hour':
-                print(f"Found hour field")
+                # print(f"Found hour field")
                 # get each expression if more than 1
                 hour_count = self._expr_count(exprs, 'hour')
             # count minutes
             elif field.name == "minute":
-                print(f"found minute field: {field}")
+                # print(f"found minute field: {field}")
                 minute_count = self._expr_count(exprs, "minute")
             # count seconds
             elif field.name == "second":
-                print(f"found second field: {field}")
+                # print(f"found second field: {field}")
                 second_count = self._expr_count(exprs, "second")
         # seconds * minutes * hours
         return hour_count * minute_count * second_count
@@ -53,10 +53,10 @@ class ContinuousSubweekly(CronTrigger):
             # sum the hours from each
             if isinstance(expr, RangeExpression):
             # if type(expr) is RangeExpression:
-                print(f"this is a RangeExpression")
+                # print(f"this is a RangeExpression")
                 count += self._range_expr_counter(expr)
             elif type(expr) is AllExpression:
-                print(f"parent type all expression {expr}")
+                # print(f"parent type all expression {expr}")
                 count += self._all_expr_counter(expr, field_name)
             else:
                 # WeekdayPositionExpression, LastDayOfMonthExpression
@@ -77,7 +77,7 @@ class ContinuousSubweekly(CronTrigger):
             count = last - first + 1
             if step is not None:
                 count = count // step
-        print(f"final range expr count: {count}")
+        # print(f"final range expr count: {count}")
         return count
     
     def _all_expr_counter(self, expr: AllExpression, field_name: str) -> int:
