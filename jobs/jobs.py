@@ -5,6 +5,7 @@ import time
 from typing import TYPE_CHECKING, List
 
 from schemas.schemas import Symbol, TickerDayClose
+from schemas.strategy import StrategyBase
 from backend.db import (
     update_prev_pos,
     insert_update_sym_hdr,
@@ -13,12 +14,11 @@ from backend.db import (
     update_sroc_many,
     select_max_ticker_ts
 )
-
-if TYPE_CHECKING:
-    from .trigger import ContinuousSubweekly
-    from .resources import ResourceBase
-    from logging import Logger
-    from apscheduler.triggers.cron import CronTrigger
+from backend.dtz import Eastern
+from trigger import ContinuousSubweekly
+from resources import ResourceBase
+from logging import Logger
+from apscheduler.triggers.cron import CronTrigger
 
 class JobBase(ABC):
 
@@ -85,20 +85,22 @@ class TickerJob(JobBase):
     def __init__(self, 
                  resource: ResourceBase, 
                  trigger: ContinuousSubweekly, 
-                 strategy=None, 
-                 logger: Logger | None=None
+                 strategy: StrategyBase, 
+                 logger: Logger | None=None,
+                 spread: str = 'week'
                  ):
         self.resource = resource
         self.trigger = trigger
         self.strategy = strategy
         self.logger = logger
+        self.spread = spread
         self.tickers = self.pre_fetch()
+        
 
     def pre_fetch(self) -> List[str]:
-        # num top symbols should come from strrategy
         # ticker_slice should come from trigger, qty
         # min_ts comes from strategy
-        db_tickers = [row["symbol"] for row in select_top_symbols_mcap(n=1000)]
+        db_tickers = [row["symbol"] for row in select_top_symbols_mcap(n=self.strategy.scored_tickers)]
         tickers = self._get_tickerslice(db_tickers)
         ######
         # This is for pruning -- Different Job?
@@ -158,7 +160,17 @@ class TickerJob(JobBase):
         # self.trigger.daily_executions
         # self.trigger.days_per_week
         # self.trigger.weekly_executions
-
+        match self.spread:
+            case 'day':
+                print('query all ticker data within the executions in a day')
+                tickers_per_exec = len(all_tickers) // self.trigger.daily_executions
+                curr_time = datime.now(tz=Eastern).timetz()
+                for i, et in enumerate(self.trigger.exec_times()):
+                    pass
+            case 'week':
+                print('query all ticker data over the course of a week')
+            case _:
+                return []
         # weekday(): mon=0, sun=6
         wkday = datetime.now().weekday()
         tkrs_per_day = round(len(all_tickers) / 5)
@@ -169,20 +181,20 @@ class TickerJob(JobBase):
         sl_end = sl_start + tkrs_per_day
         return all_tickers[sl_start: sl_end]
 
-    def _calc_query_days(self, ticker: str, min_days: int = QUERY_DAYS) -> int:
+    def _calc_query_days(self, ticker: str) -> int:
         latest_data = select_max_ticker_ts(ticker)[0]
         latest, daycount = latest_data['latest'], latest_data['daycount']
 
         logger.info(f"{ticker}: latest: {latest}, daycount: {daycount}")
 
         if latest is None:
-            query_days = min_days
+            query_days = self.strategy.query_days
             logger.info(f"no data, query days = {query_days}")
         else:
             days_since_latest = int((datetime.now().timestamp() - latest)/86400)
             logger.info(f"days_since: {days_since_latest}")
-            if days_since_latest + daycount < min_days or days_since_latest > min_days:
-                query_days = min_days
+            if days_since_latest + daycount < self.strategy.query_days or days_since_latest > self.strategy.query_days:
+                query_days = self.strategy.query_days
                 logger.info(f"not enough data, query days = {query_days}")
             elif days_since_latest == 0:
                 logger.info("Zero days, continuing")
@@ -191,3 +203,12 @@ class TickerJob(JobBase):
                 query_days = days_since_latest
                 logger.info(f"recent data, query days = {query_days}")
         return query_days
+
+def test():
+    t = ContinuousSubweekly(hour='*', minute='58', second='0')
+    print(f"curr time eastern: {datetime.now(tz=Eastern)}")
+    for et in t.exec_times():
+        print(f"exec time: {str(et)}")
+        print(abs((et - datetime.now(tz=Eastern)).total_seconds()))
+if __name__ == "__main__":
+    test()

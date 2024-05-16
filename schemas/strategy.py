@@ -6,16 +6,13 @@ from dataclasses import dataclass, field
 import polars as pl
 from typing import List
 
-# EVAL_DAYS = 90
-# QUERY_DAYS = int(((90 / 5) * 2) + EVAL_DAYS)
-# MAX_DAYS = QUERY_DAYS * 2
-
 @dataclass
 class StrategyBase(ABC):
     scored_tickers: int
     top_tickers: int
     eval_days: int = field(init=False)
     query_days: int = field(init=False)
+    prune_before_days: int = field(init=False)
 
     @abstractmethod
     def __post_init__(self):
@@ -36,6 +33,7 @@ class SROCStrategy(StrategyBase):
     def __post_init__(self):
         self.eval_days = max(self.ema_window, self.roc_window)
         self.query_days = ((self.eval_days // 5) * 2) + self.eval_days
+        self.prune_before_days = self.query_days * 2
 
     def score(self, ticker_closes: List[dict]) -> List[dict]:
         # result = select_ticker_closes(ticker)

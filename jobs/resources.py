@@ -1,10 +1,7 @@
 from abc import ABC, abstractmethod
 import json
 import requests
-from typing import TYPE_CHECKING, NewType
-
-if TYPE_CHECKING:
-    from typing import List
+from typing import List
 
 
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}

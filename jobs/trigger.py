@@ -1,7 +1,9 @@
-from datetime import datetime
+from collections.abc import Generator
+from datetime import datetime, time, timedelta
 from typing import List
 from apscheduler.triggers.cron import CronTrigger
-from apscheduler.triggers.cron.expressions import AllExpression, RangeExpression, WeekdayRangeExpression
+from apscheduler.triggers.cron.expressions import AllExpression, RangeExpression
+from backend.dtz import Eastern
 
 class ContinuousSubweekly(CronTrigger):
     def __init__(self, year='*', month='*', day='*', week=None, 
@@ -17,21 +19,13 @@ class ContinuousSubweekly(CronTrigger):
         minute_count = 1
         second_count = 1
         for field in self.fields:
-            # count hours
             exprs = field.expressions
             if field.name == 'hour':
-                # print(f"Found hour field")
-                # get each expression if more than 1
                 hour_count = self._expr_count(exprs, 'hour')
-            # count minutes
             elif field.name == "minute":
-                # print(f"found minute field: {field}")
                 minute_count = self._expr_count(exprs, "minute")
-            # count seconds
             elif field.name == "second":
-                # print(f"found second field: {field}")
                 second_count = self._expr_count(exprs, "second")
-        # seconds * minutes * hours
         return hour_count * minute_count * second_count
 
     @property
@@ -46,6 +40,25 @@ class ContinuousSubweekly(CronTrigger):
     @property
     def weekly_executions(self) -> int:
         return self.days_per_week * self.daily_executions
+
+    def exec_times(self) -> Generator[datetime, None, None]:
+        starttime = self.get_next_fire_time(None, datetime.now(tz=Eastern))
+        if not isinstance(starttime, datetime):
+            raise Exception("No more executions")
+        starttime = starttime.replace(hour=0, minute=0, second=0, microsecond=0) 
+        endtime = starttime + timedelta(days=1)
+        ptr = starttime
+        count = 0
+        while ptr < endtime and count < self.daily_executions:
+            ptr = self.get_next_fire_time(None, ptr)
+            if not isinstance(ptr, datetime):
+                raise Exception("No more executions")
+            yield ptr
+            ptr += timedelta(seconds=1)
+            count += 1
+
+    def exec_days(self):
+        pass        
 
     def _expr_count(self, exprs: List[AllExpression], field_name: str) -> int:
         count = 0
@@ -88,14 +101,15 @@ class ContinuousSubweekly(CronTrigger):
         return count
 
 def test():
-    t = ContinuousSubweekly(day_of_week='sat', hour=None, minute='10-50/5', timezone='US/Eastern')
-    fields = t.get_fields() 
+    t = ContinuousSubweekly(day_of_week='*', hour='*', minute='5', timezone='US/Eastern')
+    fields = t.fields 
     print(fields)
     for field in fields:
         print(field.expressions)
     print(t.get_next_fire_time(None, datetime.now()))
     print(f"Daily: {t.daily_executions}")
-
+    for exec in t.exec_times():
+        print(f"yielded time: {exec}")
 if __name__ == "__main__":
     test()
 
