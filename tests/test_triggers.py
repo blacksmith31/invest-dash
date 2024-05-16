@@ -1,4 +1,6 @@
 import pytest
+from datetime import datetime
+from backend.dtz import Eastern
 from jobs.trigger import ContinuousSubweekly
 
 
@@ -87,10 +89,10 @@ triggers = [
 
 @pytest.mark.parametrize("trigger", triggers)
 def test_exec_times_day(trigger) -> None:
-    time_ls = [t for t in trigger.exec_times("day")]
+    time_ls = [t for t in trigger.exec_times(datetime.now(tz=Eastern), "day")]
     assert len(time_ls) == trigger.daily_executions
 
 @pytest.mark.parametrize("trigger", triggers)
 def test_exec_times_week(trigger) -> None:
-    time_ls = list(trigger.exec_times("week"))
+    time_ls = list(trigger.exec_times(datetime.now(tz=Eastern), "week"))
     assert len(time_ls) == trigger.weekly_executions

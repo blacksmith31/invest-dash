@@ -43,8 +43,8 @@ class ContinuousSubweekly(CronTrigger):
     def weekly_executions(self) -> int:
         return self.days_per_week * self.daily_executions
 
-    def exec_times(self, spread: Spread) -> Generator[datetime, None, None]:
-        starttime = self.get_next_fire_time(None, datetime.now(tz=Eastern))
+    def exec_times(self, dt: datetime, spread: Spread) -> Generator[datetime, None, None]:
+        starttime = self.get_next_fire_time(None, dt - timedelta(seconds=5))
         if not isinstance(starttime, datetime):
             raise Exception("No more executions")
         starttime = starttime.replace(hour=0, minute=0, second=0, microsecond=0) 
@@ -52,8 +52,8 @@ class ContinuousSubweekly(CronTrigger):
         if spread == "week":
             starttime = starttime - timedelta(days=starttime.weekday())
             endtime = starttime + timedelta(days=6, hours=23, minutes=59, seconds=59)
-        print(f"starttime: {starttime}")
-        print(f"endtime: {endtime}")
+        # print(f"starttime: {starttime}")
+        # print(f"endtime: {endtime}")
         ptr = starttime
         count = 0
         while ptr < endtime and count < self.weekly_executions:

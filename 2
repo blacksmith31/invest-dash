@@ -161,35 +161,41 @@ class TickerJob(JobBase):
         # self.trigger.weekly_executions
         match self.spread:
             case 'day':
-                executions = self.trigger.daily_executions
+                print('query all ticker data within the executions in a day')
+                tickers_per_exec = len(all_tickers) // self.trigger.daily_executions
+                if tickers_per_exec == 0:
+                    tickers_per_exec = 1
+                for i, et in enumerate(self.trigger.exec_times(dt - timedelta(seconds=5), self.spread)):
+                    if i >= self.trigger.daily_executions:
+                        # completed the list for the day 
+                        return []
+                    delta = abs((et - dt).total_seconds())
+                    print(f"ET: {et}, DT: {dt}")
+                    print(f"delta: {delta}")
+                    if delta < 30:
+                        sl_start = i * tickers_per_exec
+                        if i + 1 == self.trigger.daily_executions:
+                            return all_tickers[sl_start:]
+                        return all_tickers[sl_start:sl_start + tickers_per_exec]
             case 'week':
-                executions = self.trigger.weekly_executions
+                print('query all ticker data over the course of a week')
             case _:
                 return []
-        tickers_per_exec = len(all_tickers) // executions
-        if tickers_per_exec == 0:
-            tickers_per_exec = 1
-        # print(f"ticker per exec: {tickers_per_exec}")
-        for i, et in enumerate(self.trigger.exec_times(dt, self.spread)):
-            print(f"i: {i}, et: {et}")
-            if i >= executions:
-                # print(f"I got greater")
-                return []
-            delta = abs((et - dt).total_seconds())
-            # print(f"ET: {et}, DT: {dt}")
-            # print(f"delta: {delta}")
-            if delta < 30:
-                # print(f"i found at {i}")
-                sl_start = i * tickers_per_exec
-                if i + 1 == executions:
-                    return all_tickers[sl_start:]
-                return all_tickers[sl_start:sl_start + tickers_per_exec]
+        # weekday(): mon=0, sun=6
+        wkday = datetime.now().weekday()
+        tkrs_per_day = round(len(all_tickers) / 5)
+        sl_start = wkday * tkrs_per_day
+        if wkday == 4:
+            # friday just goes to the end
+            return all_tickers[sl_start:]
+        sl_end = sl_start + tkrs_per_day
+        return all_tickers[sl_start: sl_end]
 
     def _calc_query_days(self, ticker: str) -> int:
         latest_data = select_max_ticker_ts(ticker)[0]
         latest, daycount = latest_data['latest'], latest_data['daycount']
-        msg = f"{ticker}: latest: {latest}, daycount: {daycount}"
-        self.logger.info(msg) if self.logger else print(msg)
+
+        logger.info(f"{ticker}: latest: {latest}, daycount: {daycount}")
 
         if latest is None:
             query_days = self.strategy.query_days
