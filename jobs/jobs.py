@@ -4,7 +4,7 @@ import random
 import time
 from typing import TYPE_CHECKING, List
 
-from schemas.schemas import Symbol, TickerDayClose
+from schemas.schemas import Symbol, TickerDayClose, Spread
 from schemas.strategy import StrategyBase
 from backend.db import (
     update_prev_pos,
@@ -87,21 +87,19 @@ class TickerJob(JobBase):
                  trigger: ContinuousSubweekly, 
                  strategy: StrategyBase, 
                  logger: Logger | None=None,
-                 spread: str = 'week'
+                 spread: Spread = 'week'
                  ):
         self.resource = resource
         self.trigger = trigger
         self.strategy = strategy
         self.logger = logger
         self.spread = spread
-        self.tickers = self.pre_fetch()
-        
 
-    def pre_fetch(self) -> List[str]:
+    def pre_fetch(self, dt:datetime) -> List[str]:
         # ticker_slice should come from trigger, qty
         # min_ts comes from strategy
         db_tickers = [row["symbol"] for row in select_top_symbols_mcap(n=self.strategy.scored_tickers)]
-        tickers = self._get_tickerslice(db_tickers)
+        tickers = self._get_tickerslice(db_tickers, dt)
         ######
         # This is for pruning -- Different Job?
         # min_ts = datetime.timestamp(datetime.now() - timedelta(days=MAX_DAYS))
@@ -138,7 +136,8 @@ class TickerJob(JobBase):
         update_sroc_many(sroc_data)
 
     def update(self):
-        for ticker in self.tickers:
+        tickers = self.pre_fetch(datetime.now(tz=Eastern))
+        for ticker in tickers:
             # calc days worth of data to query based on what is saved in db
             # logger.info(f"{datetime.now()}:: Update: {ticker}")
             query_days = self._calc_query_days(ticker)
@@ -155,7 +154,7 @@ class TickerJob(JobBase):
         self.logger.info(msg) if self.logger else print(msg)
         time.sleep(sleep_time)
 
-    def _get_tickerslice(self, all_tickers: List[str]) -> List[str]:
+    def _get_tickerslice(self, all_tickers: List[str], dt: datetime) -> List[str]:
         ### Based on #executions
         # self.trigger.daily_executions
         # self.trigger.days_per_week
@@ -164,9 +163,19 @@ class TickerJob(JobBase):
             case 'day':
                 print('query all ticker data within the executions in a day')
                 tickers_per_exec = len(all_tickers) // self.trigger.daily_executions
-                curr_time = datime.now(tz=Eastern).timetz()
-                for i, et in enumerate(self.trigger.exec_times()):
-                    pass
+                if tickers_per_exec == 0:
+                    tickers_per_exec = 1
+                for i, et in enumerate(self.trigger.exec_times('day')):
+                    if i >= self.trigger.daily_executions:
+                        # completed the list for the day 
+                        return []
+                    delta = abs((et - dt).total_seconds())
+                    print(f"delta: {delta}")
+                    if delta < 30:
+                        sl_start = i * tickers_per_exec
+                        if i + 1 == self.trigger.daily_executions:
+                            return all_tickers[sl_start:]
+                        return all_tickers[sl_start:sl_start + tickers_per_exec]
             case 'week':
                 print('query all ticker data over the course of a week')
             case _:

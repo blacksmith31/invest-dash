@@ -1,6 +1,9 @@
 from enum import Enum
-from typing import Optional, Annotated
+from typing import Optional, Annotated, Literal, TypeAlias
 from pydantic import BaseModel, Field, BeforeValidator
+
+
+Spread: TypeAlias = Literal['execution', 'day', 'week']
 
 
 class TrackingStatus(Enum):

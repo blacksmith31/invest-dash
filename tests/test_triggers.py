@@ -77,3 +77,20 @@ expected_weeklys = [
 @pytest.mark.parametrize("trigger, expected_weekly", list(zip(triggers, expected_weeklys)))
 def test_weekly_executions(trigger, expected_weekly) -> None:
     assert trigger.weekly_executions == expected_weekly
+
+#################################
+triggers = [
+    ContinuousSubweekly(day_of_week='thu', hour='4', minute='0', second='0', timezone='US/Eastern')
+    ,ContinuousSubweekly(day_of_week='mon-fri', hour='16', minute='5', second='5', timezone='US/Eastern')
+    ,ContinuousSubweekly(day_of_week='mon-fri', hour='*', minute='5', second='5', timezone='US/Eastern')
+]
+
+@pytest.mark.parametrize("trigger", triggers)
+def test_exec_times_day(trigger) -> None:
+    time_ls = [t for t in trigger.exec_times("day")]
+    assert len(time_ls) == trigger.daily_executions
+
+@pytest.mark.parametrize("trigger", triggers)
+def test_exec_times_week(trigger) -> None:
+    time_ls = list(trigger.exec_times("week"))
+    assert len(time_ls) == trigger.weekly_executions
