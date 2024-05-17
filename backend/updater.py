@@ -76,7 +76,7 @@ def get_tickerslice(all_tickers: list) -> list:
 
 
 def calc_query_days(ticker: str, min_days: int = QUERY_DAYS) -> int:
-    latest_data = select_max_ticker_ts(ticker)[0]
+    latest_data = select_max_ticker_ts(ticker)
     latest, daycount = latest_data['latest'], latest_data['daycount']
 
     logger.info(f"{ticker}: latest: {latest}, daycount: {daycount}")

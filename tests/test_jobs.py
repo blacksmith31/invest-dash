@@ -41,5 +41,20 @@ expected_slices = [
 def test__get_tickerslice(job, dt, expected) -> None:
     # (self, all_tickers: List[str], dt: datetime)
     # print(f"times per day: {trigger.daily_executions}")
-    assert(job._get_tickerslice(all_tickers, dt)) == expected
+    assert job._get_tickerslice(all_tickers, dt) == expected
+
+######################################################################################
+data = [
+    {"latest": None, "daycount": 0}
+    ,{"latest": 1715344486, "daycount": 150}
+    ,{"latest": 1715344486, "daycount": 5}
+]
+expected_days = [
+    126
+    ,7
+    ,126
+]
+@pytest.mark.parametrize("job, latest_data, expected", list(zip(jobs, data, expected_days)))
+def test__calc_query_days(job, latest_data, expected):
+    assert job._calc_query_days(latest_data) == expected
 

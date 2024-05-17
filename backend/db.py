@@ -149,7 +149,7 @@ def select_prev_days_scores(limit: int, min_ts:int, max_ts:int) -> list[dict]:
         raise
         
 
-def select_max_ticker_ts(ticker: str) -> list[dict]:
+def select_max_ticker_ts(ticker: str) -> dict[str, int]:
     with con:
         result = con.execute("""
         SELECT max(timestamp) latest,
@@ -157,7 +157,7 @@ def select_max_ticker_ts(ticker: str) -> list[dict]:
             FROM ticker_history
             WHERE ticker = ?
         """, [ticker]).fetchall()
-        return result
+        return result[0]
 
 
 # def insert_ticker_close(ticker: str, timestamp: int, close: float) -> None:
@@ -341,12 +341,12 @@ def update_symbol_own(symbol: str):
 
 if __name__ == "__main__":
     # old = select_latest_scores(20)
-    print(select_ticker_scores("MSFT"))
+    # print(select_ticker_scores("MSFT"))
     # now = datetime.now()
     # current_ts = dt_day_shift_ts(now, 0)
     # curr_min_ts = dt_day_shift_ts(now, -8)
     # new = select_prev_days_scores(20, curr_min_ts, current_ts)
-    # 
+    print(select_max_ticker_ts("IRT"))
     # print(f"old: ")
     # # for row in old:
     # #     print(row)

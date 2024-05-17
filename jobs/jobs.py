@@ -1,11 +1,11 @@
 from abc import ABC, abstractmethod
-from datetime import datetime, timedelta
+from apscheduler.triggers.cron import CronTrigger
+from datetime import datetime
+from logging import Logger
 import random
 import time
-from typing import TYPE_CHECKING, List
+from typing import List
 
-from schemas.schemas import Symbol, TickerDayClose, Spread
-from schemas.strategy import StrategyBase
 from backend.db import (
     update_prev_pos,
     insert_update_sym_hdr,
@@ -17,8 +17,8 @@ from backend.db import (
 from backend.dtz import Eastern
 from jobs.trigger import ContinuousSubweekly
 from jobs.resources import ResourceBase
-from logging import Logger
-from apscheduler.triggers.cron import CronTrigger
+from schemas.schemas import Symbol, TickerDayClose, Spread
+from schemas.strategy import StrategyBase
 
 class JobBase(ABC):
 
@@ -111,6 +111,7 @@ class TickerJob(JobBase):
         return ticker_data
 
     def validate(self, ticker_data: List[dict]) -> List[TickerDayClose]:
+        ### could be made generic to validate closes and scores...
         validated = []
         for row in ticker_data:
             try:
@@ -121,11 +122,12 @@ class TickerJob(JobBase):
                 continue
         return validated
 
-    def post_fetch(self, ticker):
+    def post_fetch(self, validated: List[TickerDayClose]):
         # calc sroc for ticker and update sroc table
         ### type of indicator to calculate should come from strategy?
         ### score calculation should be a method of the strategy
-        sroc_data = calc_sroc(ticker)
+        dumped = [day.model_dump() for day in validated]
+        sroc_data = self.strategy.score(dumped)
         return sroc_data
 
 
@@ -137,15 +139,17 @@ class TickerJob(JobBase):
 
     def update(self):
         tickers = self.pre_fetch(datetime.now(tz=Eastern))
+        if not tickers:
+            msg = f"No tickers found at this execution time"
+            self.logger.info(msg) if self.logger else print(msg)
         for ticker in tickers:
-            # calc days worth of data to query based on what is saved in db
-            # logger.info(f"{datetime.now()}:: Update: {ticker}")
-            query_days = self._calc_query_days(ticker)
+            latest_data = select_max_ticker_ts(ticker)
+            query_days = self._calc_query_days(latest_data)
             if query_days < 1:
                 continue
             ticker_data = self.fetch(ticker, query_days)
             validated = self.validate(ticker_data)
-            sroc_data = self.post_fetch(ticker)
+            sroc_data = self.post_fetch(validated)
             self.save_ticker_days(validated)
             self.save_scores(sroc_data)
 
@@ -184,34 +188,38 @@ class TickerJob(JobBase):
                 if i + 1 == executions:
                     return all_tickers[sl_start:]
                 return all_tickers[sl_start:sl_start + tickers_per_exec]
+        return []
 
-    def _calc_query_days(self, ticker: str) -> int:
-        latest_data = select_max_ticker_ts(ticker)[0]
+    def _calc_query_days(self, latest_data: dict[str, int]) -> int:
         latest, daycount = latest_data['latest'], latest_data['daycount']
-        msg = f"{ticker}: latest: {latest}, daycount: {daycount}"
+        msg = f"latest: {latest}, daycount: {daycount}"
         self.logger.info(msg) if self.logger else print(msg)
 
         if latest is None:
             query_days = self.strategy.query_days
-            logger.info(f"no data, query days = {query_days}")
+            msg = f"no data, query days = {query_days}"
+            self.logger.debug(msg) if self.logger else print(msg)
         else:
             days_since_latest = int((datetime.now().timestamp() - latest)/86400)
-            logger.info(f"days_since: {days_since_latest}")
-            if days_since_latest + daycount < self.strategy.query_days or days_since_latest > self.strategy.query_days:
-                query_days = self.strategy.query_days
-                logger.info(f"not enough data, query days = {query_days}")
-            elif days_since_latest == 0:
-                logger.info("Zero days, continuing")
+            msg = f"days_since: {days_since_latest}"
+            self.logger.debug(msg) if self.logger else print(msg)
+            if days_since_latest == 0:
+                msg = "Zero days, continuing"
                 query_days = 0
-            else:
+            elif days_since_latest + daycount >= self.strategy.query_days:
                 query_days = days_since_latest
-                logger.info(f"recent data, query days = {query_days}")
+                msg = f"recent data, query days = {query_days}"
+            else:
+                query_days = self.strategy.query_days
+                msg = f"not enough data, query days = {query_days}"
+        self.logger.debug(msg) if self.logger else print(msg)
         return query_days
 
 def test():
     t = ContinuousSubweekly(hour='*', minute='58', second='0')
-    print(f"curr time eastern: {datetime.now(tz=Eastern)}")
-    for et in t.exec_times():
+    now = datetime.now(tz=Eastern)
+    print(f"curr time eastern: {now}")
+    for et in t.exec_times(now, "day"):
         print(f"exec time: {str(et)}")
         print(abs((et - datetime.now(tz=Eastern)).total_seconds()))
 if __name__ == "__main__":

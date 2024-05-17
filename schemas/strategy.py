@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 import polars as pl
 from typing import List
 
+
 @dataclass
 class StrategyBase(ABC):
     scored_tickers: int
@@ -19,7 +20,7 @@ class StrategyBase(ABC):
         pass
 
     @abstractmethod
-    def score(self):
+    def score(self, ticker_closes: List[dict]):
         pass
 
 @dataclass
