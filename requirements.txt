@@ -1,10 +1,10 @@
 #beautifulsoup4==4.10.0
 pytest==7.0.0
-requests==2.22.0
+requests==2.31.0
 fastapi[all]
 apscheduler==3.10.4
 polars==0.19.3
 adbc-driver-sqlite==0.6.0
-pandas==2.1.0
+#pandas==2.1.0
 jinja2-fragments==1.0.0
 
