@@ -1,136 +1,37 @@
-from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.triggers.cron import CronTrigger
-from contextlib import asynccontextmanager
-from datetime import datetime, timedelta
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from jinja2_fragments.fastapi import Jinja2Blocks
 import logging
-import operator
-from pathlib import Path
 
-from backend import db
-from backend.helpers import (
-    day_scores_compare,
-    dt_day_shift_ts,
-    fmt_currency_word, 
-    ts_to_datestr,
-    ts_to_str, 
-    score_round, 
-)
-from backend.updater import update
-from backend.symbols import symbol_update
+from config.settings import settings
+from config.lifespan import lifespan
 from routers.api import router as api_router
+from routers.views import router as view_router
 
 logging.basicConfig()
 logging.getLogger('apscheduler').setLevel(logging.DEBUG)
 
-BASE_PATH = Path(__file__).resolve().parent
-templates = Jinja2Blocks(directory=str(BASE_PATH / "frontend/templates"))
-#templates.env.filters["from_json"] = from_json
+print(f"static dir: {settings.STATIC_DIR}")
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    scheduler = BackgroundScheduler()
-    trigger = CronTrigger(year='*', month='*', day='*',
-                          day_of_week='mon-fri', hour='21',
-                          minute='55', timezone="US/Eastern")
-    symbol_trigger = CronTrigger(year='*', month='*', day='*',
-                                 day_of_week='sat', hour='5',
-                                 minute='0', timezone="US/Eastern")
-    scheduler.add_job(update, trigger=trigger, name="Updater")
-    scheduler.add_job(symbol_update, trigger=symbol_trigger, name="SymbolUpdate")
-    scheduler.start()
-    yield
-    # do stuff at shutdown here
+def get_app() -> FastAPI:
+
+    app = FastAPI(lifespan=lifespan, **settings.fastapi_kwargs)
+    app.mount("/static", StaticFiles(directory="/invest_dash/frontend/static"), name="static")
+    app.include_router(api_router)
+    app.include_router(view_router)
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=['*'],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"]
+    )
     
-app = FastAPI(lifespan=lifespan)
-app.include_router(api_router)
-app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
+    return app
 
-origins = ["*"]
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"]
-)
+app = get_app()
 
-
-@app.get("/", status_code=200, response_class=HTMLResponse)
-async def root(request:Request, window:int=7, limit:int=20):
-    now = datetime.now() - timedelta(days=1)
-    current_ts = dt_day_shift_ts(now, 0)
-    curr_min_ts = dt_day_shift_ts(now, -1 * (window + 1))
-    data = db.select_prev_days_scores(limit, curr_min_ts, current_ts)
-    context = {"request": request,
-               "data": data,
-               "ts_to_datestr": ts_to_datestr,
-               "round": score_round}
-    block_name = None
-    if request.headers.get("HX-Request"):
-        block_name = "table"
-    return templates.TemplateResponse("index.html",
-                                      context,
-                                      block_name=block_name)
-
-@app.get("/chart_data", status_code=200, response_class=HTMLResponse)
-async def chart_data(request: Request, ticker: str = ''):
-    data = db.select_ticker_history(ticker)
-    # print(f"request: {request.json()}")
-    # labels = [Markup(ts_to_str(row["timestamp"])) for row in data]
-    labels = [row["timestamp"] for row in data]
-    closes = [round(row["close"] or 0, 2) for row in data]
-    scores = [round(row["sroc"] or 0, 2) for row in data]
-    context = {"request": request,
-               "ticker": ticker,
-               "labels": labels,
-               "y1": closes,
-               "y2": scores,
-               "ts_to_str": ts_to_str}
-    return templates.TemplateResponse("chart.html",
-                                      context)
-
-@app.get("/changes", status_code=200, response_class=HTMLResponse)
-async def changes(request: Request, limit:int=20, days:int=7, window:int=7):
-    now = datetime.now() - timedelta(days=1)
-    current_ts = dt_day_shift_ts(now, 0)
-    curr_min_ts = dt_day_shift_ts(now, -1 * (window + 1))
-    prev_max_dt = now - timedelta(days=days+2)
-    prev_max_ts = dt_day_shift_ts(prev_max_dt, 0)
-    prev_min_ts = dt_day_shift_ts(prev_max_dt, -1 * (window + 1))
-    current = db.select_prev_days_scores(limit=limit, min_ts=curr_min_ts, max_ts=current_ts)
-    past = db.select_prev_days_scores(limit=limit, min_ts=prev_min_ts, max_ts=prev_max_ts)
-    added, removed = day_scores_compare(current, past)
-    context = {"request": request,
-               "ts_to_datestr": ts_to_datestr,
-               "added_symbols": added,
-               "removed_symbols": removed}
-    return templates.TemplateResponse("changes.html",
-                                      context)
-
-@app.get("/symbols_hdr", status_code=200, response_class=HTMLResponse)
-def symbols_hdr(request: Request, limit:int=1000):
-    data = db.view_symbol_hdr(limit=limit)
-    context = {"request": request,
-               "fmt_currency": fmt_currency_word,
-               "data": data}
-    return templates.TemplateResponse("view_symbol_hdr.html", context)
-
-
-@app.get("/view_scores", status_code=200, response_class=HTMLResponse)
-def view_daily_scores(request: Request, days: int = 7):
-    data = db.view_daily_scores(days)
-    col_names = list(data[0].keys())
-    max_date = max(col_names[1:])
-    print(f"max date {max_date}, in all: {all([max_date in row for row in data])}")
-    sorted_data = sorted(data, key=operator.itemgetter(max_date), reverse=True)
-    context = {"request": request,
-               "col_names": col_names,
-               "data": sorted_data}
-    return templates.TemplateResponse("view_daily_scores.html", context)
+    
 
