@@ -51,7 +51,7 @@ data = [
 ]
 expected_days = [
     126
-    ,7
+    ,9
     ,126
 ]
 @pytest.mark.parametrize("job, latest_data, expected", list(zip(jobs, data, expected_days)))

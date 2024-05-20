@@ -18,9 +18,6 @@ from backend.helpers import (
 from schemas.schemas import Symbol, TickerDayClose, TickerDayScore
 from config.settings import settings
 
-# settings = Settings()
-print(f"Template dir: {settings.TEMPLATE_DIR}")
-
 templates = Jinja2Blocks(settings.TEMPLATE_DIR)
 
 router = APIRouter(

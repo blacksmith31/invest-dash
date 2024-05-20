@@ -4,14 +4,11 @@ from collections.abc import Generator
 from datetime import datetime, timedelta
 from typing import List
 
-from backend.dtz import Eastern
 from schemas.schemas import Spread
 
 class ContinuousSubweekly(CronTrigger):
-    def __init__(self, year='*', month='*', day='*', week=None, 
-                 day_of_week=None, hour=None, minute=None, second=None, 
-                 timezone=None):
-        super().__init__(year=year, month=month, day=day, week=week, day_of_week=day_of_week, hour=hour,
+    def __init__(self, day_of_week=None, hour=None, minute=None, second=None, timezone=None):
+        super().__init__(year='*', month='*', day='*', week=None, day_of_week=day_of_week, hour=hour,
                  minute=minute, second=second, start_date=None, end_date=None, timezone=timezone,
                  jitter=None)
 
@@ -117,11 +114,6 @@ def test():
         print(field.expressions)
     print(t.get_next_fire_time(None, datetime.now()))
     print(f"Weekly: {t.weekly_executions}")
-    for exec in t.exec_times("week"):
-        print(f"yielded time: {exec}")
-    print(f"Daily: {t.daily_executions}")
-    for exec in t.exec_times("day"):
-        print(f"yielded time: {exec}")
 if __name__ == "__main__":
     test()
 

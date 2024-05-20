@@ -9,15 +9,11 @@ from config.lifespan import lifespan
 from routers.api import router as api_router
 from routers.views import router as view_router
 
-logging.basicConfig()
-logging.getLogger('apscheduler').setLevel(logging.DEBUG)
-
-print(f"static dir: {settings.STATIC_DIR}")
 
 def get_app() -> FastAPI:
 
     app = FastAPI(lifespan=lifespan, **settings.fastapi_kwargs)
-    app.mount("/static", StaticFiles(directory="/invest_dash/frontend/static"), name="static")
+    app.mount("/static", StaticFiles(directory=settings.STATIC_DIR), name="static")
     app.include_router(api_router)
     app.include_router(view_router)
 

@@ -35,7 +35,7 @@ class JobBase(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def update(self):
+    def run(self):
         pass
 
 
@@ -70,7 +70,7 @@ class SymbolJob(JobBase):
                 continue
         return updated
 
-    def update(self):
+    def run(self):
         # pre_fetch
         self.pre_fetch()
         # fetch
@@ -96,8 +96,6 @@ class TickerJob(JobBase):
         self.spread = spread
 
     def pre_fetch(self, dt:datetime) -> List[str]:
-        # ticker_slice should come from trigger, qty
-        # min_ts comes from strategy
         db_tickers = [row["symbol"] for row in select_top_symbols_mcap(n=self.strategy.scored_tickers)]
         tickers = self._get_tickerslice(db_tickers, dt)
         ######
@@ -137,12 +135,14 @@ class TickerJob(JobBase):
     def save_scores(self, sroc_data):
         update_sroc_many(sroc_data)
 
-    def update(self):
+    def run(self):
         tickers = self.pre_fetch(datetime.now(tz=Eastern))
         if not tickers:
             msg = f"No tickers found at this execution time"
             self.logger.info(msg) if self.logger else print(msg)
-        for ticker in tickers:
+        for i, ticker in enumerate(tickers):
+            msg = f"Updating Ticker: {ticker} | index {i}/{len(tickers)}"
+            self.logger.info(msg) if self.logger else print(msg)
             latest_data = select_max_ticker_ts(ticker)
             query_days = self._calc_query_days(latest_data)
             if query_days < 1:
@@ -152,17 +152,13 @@ class TickerJob(JobBase):
             sroc_data = self.post_fetch(validated)
             self.save_ticker_days(validated)
             self.save_scores(sroc_data)
-
-        sleep_time = random.randrange(1, 10)
-        msg = f"sleep: {sleep_time}"
-        self.logger.info(msg) if self.logger else print(msg)
-        time.sleep(sleep_time)
+            if (i+1) < len(tickers):
+                sleep_time = random.randrange(1, 10)
+                msg = f"sleep: {sleep_time}"
+                self.logger.info(msg) if self.logger else print(msg)
+                time.sleep(sleep_time)
 
     def _get_tickerslice(self, all_tickers: List[str], dt: datetime) -> List[str]:
-        ### Based on #executions
-        # self.trigger.daily_executions
-        # self.trigger.days_per_week
-        # self.trigger.weekly_executions
         match self.spread:
             case 'day':
                 executions = self.trigger.daily_executions
@@ -173,17 +169,15 @@ class TickerJob(JobBase):
         tickers_per_exec = len(all_tickers) // executions
         if tickers_per_exec == 0:
             tickers_per_exec = 1
-        # print(f"ticker per exec: {tickers_per_exec}")
         for i, et in enumerate(self.trigger.exec_times(dt, self.spread)):
-            print(f"i: {i}, et: {et}")
             if i >= executions:
-                # print(f"I got greater")
+                msg = f"Completed {i} executions for the {self.spread}"
+                self.logger.info(msg) if self.logger else print(msg)
                 return []
             delta = abs((et - dt).total_seconds())
-            # print(f"ET: {et}, DT: {dt}")
-            # print(f"delta: {delta}")
             if delta < 30:
-                # print(f"i found at {i}")
+                msg = f"slicing at execution index {i}/{executions}, with {tickers_per_exec} ticker(s) per execution"
+                self.logger.info(msg) if self.logger else print(msg)
                 sl_start = i * tickers_per_exec
                 if i + 1 == executions:
                     return all_tickers[sl_start:]
@@ -192,7 +186,7 @@ class TickerJob(JobBase):
 
     def _calc_query_days(self, latest_data: dict[str, int]) -> int:
         latest, daycount = latest_data['latest'], latest_data['daycount']
-        msg = f"latest: {latest}, daycount: {daycount}"
+        msg = f"latest: {datetime.fromtimestamp(latest)}, daycount: {daycount}"
         self.logger.info(msg) if self.logger else print(msg)
 
         if latest is None:
@@ -201,18 +195,16 @@ class TickerJob(JobBase):
             self.logger.debug(msg) if self.logger else print(msg)
         else:
             days_since_latest = int((datetime.now().timestamp() - latest)/86400)
-            msg = f"days_since: {days_since_latest}"
-            self.logger.debug(msg) if self.logger else print(msg)
             if days_since_latest == 0:
-                msg = "Zero days, continuing"
                 query_days = 0
+                msg = "Zero days since latest, continuing"
             elif days_since_latest + daycount >= self.strategy.query_days:
                 query_days = days_since_latest
                 msg = f"recent data, query days = {query_days}"
             else:
                 query_days = self.strategy.query_days
                 msg = f"not enough data, query days = {query_days}"
-        self.logger.debug(msg) if self.logger else print(msg)
+            self.logger.debug(msg) if self.logger else print(msg)
         return query_days
 
 def test():
