@@ -148,6 +148,8 @@ class TickerJob(JobBase):
             if query_days < 1:
                 continue
             ticker_data = self.fetch(ticker, query_days)
+            if not ticker_data:
+                continue
             validated = self.validate(ticker_data)
             sroc_data = self.post_fetch(validated)
             self.save_ticker_days(validated)
@@ -186,8 +188,9 @@ class TickerJob(JobBase):
 
     def _calc_query_days(self, latest_data: dict[str, int]) -> int:
         latest, daycount = latest_data['latest'], latest_data['daycount']
-        msg = f"latest: {datetime.fromtimestamp(latest)}, daycount: {daycount}"
-        self.logger.info(msg) if self.logger else print(msg)
+        if latest is not None and daycount is not None:
+            msg = f"latest: {datetime.fromtimestamp(latest)}, daycount: {daycount}"
+            self.logger.info(msg) if self.logger else print(msg)
 
         if latest is None:
             query_days = self.strategy.query_days
