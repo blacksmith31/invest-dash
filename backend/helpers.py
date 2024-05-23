@@ -1,7 +1,5 @@
 from datetime import datetime, timedelta
-import json
 import math
-from typing import List
 
 from backend.dtz import Eastern
 
@@ -35,12 +33,6 @@ def day_scores_compare(current, previous):
 
 def score_round(score: float):
     return round(score or 0, 2)
-
-def from_json(s):
-    return json.loads(s)
-
-def fmt_currency(val):
-    return '${:,.0f}'.format(float(val))
 
 def fmt_currency_word(val):
     millnames = ['', 'Th', 'M', 'B', 'T']
