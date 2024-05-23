@@ -140,6 +140,7 @@ def select_prev_days_scores(limit: int, min_ts:int, max_ts:int) -> list[dict]:
               FROM ticker_history
              WHERE timestamp < ?
                AND timestamp > ?
+               AND sroc is not null
           GROUP BY ticker
           ORDER BY sroc DESC
              LIMIT ?

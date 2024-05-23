@@ -4,8 +4,6 @@ import logging.handlers
 import pathlib
 
 
-logger = logging.getLogger("jobs")
-
 def setup_logging():
     configfile = pathlib.Path(__file__).resolve().parent / "logging_config.json"
     with open(configfile) as f:
@@ -13,6 +11,7 @@ def setup_logging():
     logging.config.dictConfig(config)
 
 def main():
+    logger = logging.getLogger("jobs")
     setup_logging()
     logger.debug("debug msg")
     logger.info("info msg")

@@ -12,7 +12,8 @@ from backend.db import (
     select_top_symbols_mcap,
     insert_closes_many,
     update_sroc_many,
-    select_max_ticker_ts
+    select_max_ticker_ts,
+    select_ticker_closes
 )
 from backend.dtz import Eastern
 from jobs.trigger import ContinuousSubweekly
@@ -120,7 +121,7 @@ class TickerJob(JobBase):
                 continue
         return validated
 
-    def post_fetch(self, validated: List[TickerDayClose]):
+    def post_fetch(self, validated: List[TickerDayClose]) -> List[dict]:
         # calc sroc for ticker and update sroc table
         ### type of indicator to calculate should come from strategy?
         ### score calculation should be a method of the strategy
@@ -151,7 +152,9 @@ class TickerJob(JobBase):
             if not ticker_data:
                 continue
             validated = self.validate(ticker_data)
-            sroc_data = self.post_fetch(validated)
+            ticker_history = select_ticker_closes(ticker)
+            validated_history = [TickerDayClose.model_validate(row) for row in ticker_history]
+            sroc_data = self.post_fetch(validated_history)
             self.save_ticker_days(validated)
             self.save_scores(sroc_data)
             if (i+1) < len(tickers):

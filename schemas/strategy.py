@@ -20,7 +20,7 @@ class StrategyBase(ABC):
         pass
 
     @abstractmethod
-    def score(self, ticker_closes: List[dict]):
+    def score(self, ticker_closes: List[dict]) -> List[dict]:
         pass
 
 @dataclass
