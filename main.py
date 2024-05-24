@@ -1,6 +1,6 @@
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from config.settings import settings
@@ -29,4 +29,7 @@ def get_app() -> FastAPI:
 app = get_app()
 
     
+@app.get('/', response_class=RedirectResponse)
+def main():
+    return '/views/main'
 
