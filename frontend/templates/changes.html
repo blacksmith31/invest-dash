@@ -16,7 +16,7 @@
             <tr>
                 <td>{{ ts_to_datestr(row["timestamp"]) }}</td>
                 <td>{{ row["ticker"] }}</td>
-                <td>{{ row["sroc"]|round(2) }}</td>
+                <td>{{ row["score"]|round(2) }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -37,7 +37,7 @@
             <tr>
                 <td>{{ ts_to_datestr(row["timestamp"]) }}</td>
                 <td>{{ row["ticker"] }}</td>
-                <td>{{ row["sroc"]|round(2) }}</td>
+                <td>{{ row["score"]|round(2) }}</td>
             </tr>
             {% endfor %}
         </tbody>

@@ -1,7 +1,10 @@
+from collections.abc import Mapping
 from datetime import datetime, timedelta
 from fastapi import APIRouter
 from operator import itemgetter
 from typing import Dict, List
+
+from fastapi.responses import JSONResponse
 
 from backend.helpers import (
     dt_day_shift_ts,
@@ -12,7 +15,8 @@ from schemas.schemas import Symbol, TickerDayClose, TickerDayScore
 
 router = APIRouter(
     prefix="/api",
-    tags=["api"]
+    tags=["api"],
+    default_response_class=JSONResponse
 )
 
 
@@ -27,18 +31,26 @@ def symbol_names(limit:int=1000):
     data = db.select_top_symbols_mcap(limit)
     return data
 
-@router.get(path="/changes", response_model=Dict[str, List[TickerDayScore]])
+@router.get(path="/changes",  response_model=Mapping[str, List[TickerDayScore]])
 async def changes(limit:int=20, days:int=7, window:int=7):
-    now = datetime.now()
+    now = datetime.now() - timedelta(days=1)
     current_ts = dt_day_shift_ts(now, 0)
-    curr_min_ts = dt_day_shift_ts(now, -1 * (window + 1))
-    prev_max_dt = now - timedelta(days=days+1)
-    prev_max_ts = dt_day_shift_ts(prev_max_dt, 0)
-    prev_min_ts = dt_day_shift_ts(prev_max_dt, -1 * (window + 1))
-    current = db.select_prev_days_scores(limit=limit, min_ts=curr_min_ts, max_ts=current_ts)
-    past = db.select_prev_days_scores(limit=limit, min_ts=prev_min_ts, max_ts=prev_max_ts)
-    added, removed = day_scores_compare(current, past)
-    return {"current": current, "past": past, "added": added, "removed": removed}
+    current_list = db.select_prev_days_scores(limit=limit, max_ts=current_ts)
+    current_list = [TickerDayScore.model_validate(day) for day in current_list]
+    # print(f">>>>>>>>>>>>>>>>>>>> {current_list}")
+    added = []
+    removed = []
+    for day in range(1, days + 2):
+        prev_ts = current_ts - 86400*day
+        prev_list = db.select_prev_days_scores(limit, prev_ts)
+        prev_list = [TickerDayScore.model_validate(day) for day in prev_list]
+        # print(f">>>>>>>>>>{prev_list}")
+        prevadd, prevrem = day_scores_compare(current_list, prev_list)
+        added_syms = [day.ticker for day in added]
+        removed_syms = [day.ticker for day in removed]
+        added += [score for score in prevadd if score.ticker not in added_syms]
+        removed += [score for score in prevrem if score.ticker not in removed_syms]
+    return {"added": added, "removed": removed}
 
 @router.get("/daily_scores")
 async def view_daily_scores(days:int=7):

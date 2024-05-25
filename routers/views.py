@@ -30,8 +30,7 @@ router = APIRouter(
 async def root(request:Request, window:int=7, limit:int=20):
     now = datetime.now() - timedelta(days=1)
     current_ts = dt_day_shift_ts(now, 0)
-    curr_min_ts = dt_day_shift_ts(now, -1 * (window + 1))
-    data = db.select_prev_days_scores(limit, curr_min_ts, current_ts)
+    data = db.select_prev_days_scores(limit, current_ts)
     context = {"request": request,
                "data": data,
                "ts_to_datestr": ts_to_datestr,
@@ -61,16 +60,24 @@ async def chart_data(request: Request, ticker: str = ''):
                                       context)
 
 @router.get("/changes", status_code=200, response_class=HTMLResponse)
-async def changes(request: Request, limit:int=20, days:int=7, window:int=7):
+async def changes(request: Request, limit:int=20, days:int=7):
     now = datetime.now() - timedelta(days=1)
     current_ts = dt_day_shift_ts(now, 0)
-    curr_min_ts = dt_day_shift_ts(now, -1 * (window + 1))
-    prev_max_dt = now - timedelta(days=days+2)
-    prev_max_ts = dt_day_shift_ts(prev_max_dt, 0)
-    prev_min_ts = dt_day_shift_ts(prev_max_dt, -1 * (window + 1))
-    current = db.select_prev_days_scores(limit=limit, min_ts=curr_min_ts, max_ts=current_ts)
-    past = db.select_prev_days_scores(limit=limit, min_ts=prev_min_ts, max_ts=prev_max_ts)
-    added, removed = day_scores_compare(current, past)
+    current_list = db.select_prev_days_scores(limit=limit, max_ts=current_ts)
+    current_list = [TickerDayScore.model_validate(day) for day in current_list]
+    added = []
+    removed = []
+    for day in range(1, days + 2):
+        prev_ts = current_ts - 86400*day
+        prev_list = db.select_prev_days_scores(limit, prev_ts)
+        prev_list = [TickerDayScore.model_validate(day) for day in prev_list]
+        prevadd, prevrem = day_scores_compare(current_list, prev_list)
+        added_syms = [day.ticker for day in added]
+        removed_syms = [day.ticker for day in removed]
+        added += [score for score in prevadd if score.ticker not in added_syms]
+        removed += [score for score in prevrem if score.ticker not in removed_syms]
+    added = [day.model_dump() for day in added]
+    removed = [day.model_dump() for day in removed]
     context = {"request": request,
                "ts_to_datestr": ts_to_datestr,
                "added_symbols": added,
