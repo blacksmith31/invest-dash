@@ -30,7 +30,8 @@ router = APIRouter(
 async def root(request:Request, window:int=7, limit:int=20):
     now = datetime.now() - timedelta(days=1)
     current_ts = dt_day_shift_ts(now, 0)
-    data = db.select_prev_days_scores(limit, current_ts)
+    min_ts = dt_day_shift_ts(now, -1 * window+1)
+    data = db.select_prev_days_scores(limit, current_ts, min_ts)
     context = {"request": request,
                "data": data,
                "ts_to_datestr": ts_to_datestr,
@@ -60,16 +61,18 @@ async def chart_data(request: Request, ticker: str = ''):
                                       context)
 
 @router.get("/changes", status_code=200, response_class=HTMLResponse)
-async def changes(request: Request, limit:int=20, days:int=7):
+async def changes(request: Request, limit:int=20, days:int=7, window:int=7):
     now = datetime.now() - timedelta(days=1)
     current_ts = dt_day_shift_ts(now, 0)
-    current_list = db.select_prev_days_scores(limit=limit, max_ts=current_ts)
+    min_ts = dt_day_shift_ts(now, -1 * window+1)
+    current_list = db.select_prev_days_scores(limit=limit, max_ts=current_ts, min_ts=min_ts)
     current_list = [TickerDayScore.model_validate(day) for day in current_list]
     added = []
     removed = []
     for day in range(1, days + 2):
         prev_ts = current_ts - 86400*day
-        prev_list = db.select_prev_days_scores(limit, prev_ts)
+        min_ts = prev_ts - 86400*8
+        prev_list = db.select_prev_days_scores(limit, prev_ts, min_ts)
         prev_list = [TickerDayScore.model_validate(day) for day in prev_list]
         prevadd, prevrem = day_scores_compare(current_list, prev_list)
         added_syms = [day.ticker for day in added]
@@ -85,7 +88,7 @@ async def changes(request: Request, limit:int=20, days:int=7):
     return templates.TemplateResponse("changes.html",
                                       context)
 
-@router.get("/symbols_hdr", status_code=200, response_class=HTMLResponse)
+@router.get("/symbols", status_code=200, response_class=HTMLResponse)
 def symbols_hdr(request: Request, limit:int=1000):
     data = db.view_symbol_hdr(limit=limit)
     context = {"request": request,

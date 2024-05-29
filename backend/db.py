@@ -130,7 +130,7 @@ def select_ticker_scores(ticker: str) -> list[dict]:
 #         raise
 
 
-def select_prev_days_scores(limit: int, max_ts:int) -> list[dict]:
+def select_prev_days_scores(limit: int, max_ts:int, min_ts:int) -> list[dict]:
     try:
         with con:
             result = con.execute("""
@@ -139,11 +139,12 @@ def select_prev_days_scores(limit: int, max_ts:int) -> list[dict]:
                    ,sroc
               FROM ticker_history
              WHERE timestamp < ?
+               AND timestamp > ?
                AND sroc is not null
           GROUP BY ticker
           ORDER BY sroc DESC
              LIMIT ?
-             """, [max_ts, limit]).fetchall()
+             """, [max_ts, min_ts, limit]).fetchall()
             return result
     except sqlite3.DatabaseError:
         raise
@@ -234,6 +235,18 @@ def view_daily_scores(days:int=7):
     # with con:
         data = con.execute(sql).fetchall()
     return data
+
+def select_tickers_scores(min_ts: int):
+    with con:
+        result = con.execute("""
+            SELECT timestamp,
+                   ticker,
+                   sroc
+              FROM ticker_history
+             WHERE sroc is not null
+               AND timestamp > ?
+        """, [min_ts]).fetchall()
+        return result
 
 def prune_ticker_history(min_ts: int) -> None:
     with con:

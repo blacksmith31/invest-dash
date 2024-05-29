@@ -35,16 +35,16 @@ def symbol_names(limit:int=1000):
 async def changes(limit:int=20, days:int=7, window:int=7):
     now = datetime.now() - timedelta(days=1)
     current_ts = dt_day_shift_ts(now, 0)
-    current_list = db.select_prev_days_scores(limit=limit, max_ts=current_ts)
+    min_ts = dt_day_shift_ts(now, window+1)
+    current_list = db.select_prev_days_scores(limit=limit, max_ts=current_ts, min_ts=min_ts)
     current_list = [TickerDayScore.model_validate(day) for day in current_list]
-    # print(f">>>>>>>>>>>>>>>>>>>> {current_list}")
     added = []
     removed = []
     for day in range(1, days + 2):
         prev_ts = current_ts - 86400*day
-        prev_list = db.select_prev_days_scores(limit, prev_ts)
+        min_ts = prev_ts - 86400*8
+        prev_list = db.select_prev_days_scores(limit, prev_ts, min_ts)
         prev_list = [TickerDayScore.model_validate(day) for day in prev_list]
-        # print(f">>>>>>>>>>{prev_list}")
         prevadd, prevrem = day_scores_compare(current_list, prev_list)
         added_syms = [day.ticker for day in added]
         removed_syms = [day.ticker for day in removed]
