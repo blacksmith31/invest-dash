@@ -131,10 +131,12 @@ class TickerJob(JobBase):
 
 
     def save_ticker_days(self, ticker_data):
-        insert_closes_many(ticker_data)
+        rows = insert_closes_many(ticker_data)
+        self.logger.info(f"inserted {rows} rows for close data")
 
     def save_scores(self, sroc_data):
-        update_sroc_many(sroc_data)
+        rows = update_sroc_many(sroc_data)
+        self.logger.info(f"inserted {rows} rows for score data")
 
     def run(self):
         tickers = self.pre_fetch(datetime.now(tz=Eastern))
@@ -152,10 +154,10 @@ class TickerJob(JobBase):
             if not ticker_data:
                 continue
             validated = self.validate(ticker_data)
+            self.save_ticker_days(validated)
             ticker_history = select_ticker_closes(ticker)
             validated_history = [TickerDayClose.model_validate(row) for row in ticker_history]
             sroc_data = self.post_fetch(validated_history)
-            self.save_ticker_days(validated)
             self.save_scores(sroc_data)
             if (i+1) < len(tickers):
                 sleep_time = random.randrange(1, 10)

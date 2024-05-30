@@ -30,7 +30,7 @@ router = APIRouter(
 async def root(request:Request, window:int=7, limit:int=20):
     now = datetime.now() - timedelta(days=1)
     current_ts = dt_day_shift_ts(now, 0)
-    min_ts = dt_day_shift_ts(now, -1 * window+1)
+    min_ts = dt_day_shift_ts(now, -1 * (window + 1))
     data = db.select_prev_days_scores(limit, current_ts, min_ts)
     context = {"request": request,
                "data": data,
@@ -64,7 +64,7 @@ async def chart_data(request: Request, ticker: str = ''):
 async def changes(request: Request, limit:int=20, days:int=7, window:int=7):
     now = datetime.now() - timedelta(days=1)
     current_ts = dt_day_shift_ts(now, 0)
-    min_ts = dt_day_shift_ts(now, -1 * window+1)
+    min_ts = dt_day_shift_ts(now, -1 * (window + 1))
     current_list = db.select_prev_days_scores(limit=limit, max_ts=current_ts, min_ts=min_ts)
     current_list = [TickerDayScore.model_validate(day) for day in current_list]
     added = []

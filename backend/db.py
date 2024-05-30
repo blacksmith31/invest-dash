@@ -174,10 +174,10 @@ def select_max_ticker_ts(ticker: str) -> dict[str, int]:
 #         return None
 
 
-def insert_closes_many(history: List[TickerDayClose]) -> None:
+def insert_closes_many(history: List[TickerDayClose]) -> int:
     dumped = [day.model_dump() for day in history]
     with con:
-        con.executemany(f"""
+        rows = con.executemany(f"""
             INSERT INTO ticker_history (
                         timestamp,
                         ticker,
@@ -186,8 +186,8 @@ def insert_closes_many(history: List[TickerDayClose]) -> None:
                         ,:ticker
                         ,:close)
             ON CONFLICT (timestamp, ticker) DO NOTHING
-        """, dumped)
-        return None
+        """, dumped).rowcount
+        return rows
 
 
 # def update_ticker_sroc(ticker: str, ts: int, sroc: float) -> None:
@@ -201,15 +201,15 @@ def insert_closes_many(history: List[TickerDayClose]) -> None:
 #         return None
 
 
-def update_sroc_many(data: list[dict]) -> None:
+def update_sroc_many(data: list[dict]) -> int:
     with con:
-        con.executemany(""" 
+        rows = con.executemany(""" 
             UPDATE ticker_history 
                SET sroc = :sroc
              WHERE timestamp = :timestamp
                AND ticker = :ticker
-        """, data)
-        return None
+        """, data).rowcount
+        return rows
 
 def view_daily_scores(days:int=7):
     sql_gen = f"""
