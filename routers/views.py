@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 import operator
+import polars as pl
 from typing import Dict, List
 
 from jinja2_fragments.fastapi import Jinja2Blocks
@@ -109,3 +110,21 @@ def view_daily_scores(request: Request, days: int = 7):
                "data": sorted_data}
     return templates.TemplateResponse("view_daily_scores.html", context)
 
+@router.get("/view_scores_2", status_code=200, response_class=HTMLResponse)
+async def pivot_daily_scores(request: Request, days:int=7):
+    data = db.select_tickers_scores(int(datetime.now().timestamp() - (days+1)*86400))
+    # data = data[:10]
+    df = pl.from_dicts(data)
+    df = df.with_columns(pl.from_epoch(pl.col("timestamp"), time_unit="s").dt.date().alias("date"))
+    df = df.pivot(index="ticker", columns="date", values="sroc")
+    with pl.Config(tbl_rows=20):
+        print(df.head(20))
+    date_cols = [col for col in reversed(df.columns) if col.startswith(str(datetime.now().year))]
+    df = df.with_columns([pl.coalesce(date_cols[idx:]) for idx in range(0, len(date_cols) - 1)])
+    df = df.sort(date_cols[0], descending=True, nulls_last=True)
+    data = df.to_dicts()
+    col_names = list(data[0].keys())
+    context = {"request": request,
+               "col_names": col_names,
+               "data": data}
+    return templates.TemplateResponse("view_daily_scores.html", context)
