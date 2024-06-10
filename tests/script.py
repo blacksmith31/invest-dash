@@ -53,14 +53,23 @@ def score(ticker_closes: List[dict]) -> List[dict]:
     df = df.drop(["close", "ema"]).drop_nulls("sroc")
     return df.to_dicts()
 
+def prev_days_scores_owned(limit: int=20, window:int=7) -> list[dict]:
+    now = datetime.now()
+    current_ts = dt_day_shift_ts(now, 0)
+    min_ts = dt_day_shift_ts(now, -1 * (window + 1))
+    data = db.select_prev_days_scores_owned(limit=limit, max_ts=current_ts, min_ts=min_ts)
+    return data
+
+
 if __name__ == "__main__":
     # df = pivot_daily_scores()
     # with pl.Config(tbl_rows=20):
     #     print(df.head(20))
     # changes()
 
-    ticker_history = db.select_ticker_closes('TYL')
-    print(ticker_history[-1])
-    scores = score(ticker_history)
-    print(scores)
+    # ticker_history = db.select_ticker_closes('TYL')
+    # print(ticker_history[-1])
+    # scores = score(ticker_history)
+    # print(scores)
+    print(prev_days_scores_owned())
 

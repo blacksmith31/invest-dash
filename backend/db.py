@@ -112,24 +112,6 @@ def select_ticker_scores(ticker: str) -> list[dict]:
         raise
 
 
-# def select_latest_scores(limit: int) -> list[dict]:
-#     try:
-#         with con:
-#             result = con.execute("""
-#             SELECT max(timestamp) ts
-#                    ,ticker
-#                    ,sroc
-#               FROM ticker_history
-#              WHERE timestamp > strftime('%s', 'now', 'start of day', '-7 days')
-#           GROUP BY ticker
-#           ORDER BY sroc DESC
-#              LIMIT ?
-#              """, [limit]).fetchall()
-#             return result
-#     except sqlite3.DatabaseError:
-#         raise
-
-
 def select_prev_days_scores(limit: int, max_ts:int, min_ts:int) -> list[dict]:
     try:
         with con:
@@ -149,6 +131,29 @@ def select_prev_days_scores(limit: int, max_ts:int, min_ts:int) -> list[dict]:
     except sqlite3.DatabaseError:
         raise
         
+
+def select_prev_days_scores_owned(limit: int, max_ts:int, min_ts:int) -> list[dict]:
+    try:
+        with con:
+            result = con.execute("""
+            SELECT max(th.timestamp) timestamp
+                   ,th.ticker
+                   ,th.sroc
+                   ,s.own
+              FROM ticker_history th
+        INNER JOIN symbol_hdr s
+                ON s.symbol = th.ticker
+             WHERE th.timestamp < ?
+               AND th.timestamp > ?
+               AND th.sroc is not null
+          GROUP BY th.ticker
+          ORDER BY th.sroc DESC
+             LIMIT ?
+             """, [max_ts, min_ts, limit]).fetchall()
+            return result
+    except sqlite3.DatabaseError:
+        raise
+
 
 def select_max_ticker_ts(ticker: str) -> dict[str, int]:
     with con:
