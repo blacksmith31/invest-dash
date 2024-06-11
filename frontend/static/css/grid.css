@@ -36,7 +36,7 @@ body {
 
 .row {
     display: grid;
-    grid-template-columns: minmax(180px, 225px) minmax(80px, 100px) minmax(65px, 175px);
+    grid-template-columns: minmax(180px, 225px) minmax(80px, 100px) minmax(65px, 175px) minmax(65px, 175px);
 }
 
 .row7 {

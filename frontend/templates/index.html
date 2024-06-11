@@ -25,12 +25,20 @@
 						<div class="rhdr">TS</div>
 						<div class="rhdr">Symbol</div>
 						<div class="rhdr">Score</div>
+						<div class="rhdr">Owned</div>
 					</div>
 					{% for row in data %}
 					<div class="row rhover" hx-get="/views/chart_data" hx-target=".chart-container" hx-vals='{"ticker": "{{ row.ticker }}"}'>
 						<div class="rdata">{{ ts_to_datestr(row.timestamp) }}</div>
 						<div class="rdata">{{ row.ticker }}</div>
 						<div class="rdata">{{ round(row.sroc)}}</div>
+						<div class="rdata">
+							<input type="checkbox" 
+								value="{{ row.own }}" 
+								{% if row.own %} 
+								checked 
+								{% endif %}>
+						</div>
 					</div>
 					{% endfor %}
 				</div>

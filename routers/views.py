@@ -32,7 +32,7 @@ async def root(request:Request, window:int=7, limit:int=20):
     now = datetime.now() - timedelta(days=1)
     current_ts = dt_day_shift_ts(now, 0)
     min_ts = dt_day_shift_ts(now, -1 * (window + 1))
-    data = db.select_prev_days_scores(limit, current_ts, min_ts)
+    data = db.select_prev_days_scores_owned(limit, current_ts, min_ts)
     context = {"request": request,
                "data": data,
                "ts_to_datestr": ts_to_datestr,
