@@ -136,19 +136,19 @@ def select_prev_days_scores_owned(limit: int, max_ts:int, min_ts:int) -> list[di
     # try:
     with con:
         result = con.execute("""
-        SELECT max(th.timestamp) timestamp
-               ,th.ticker
-               ,th.sroc
-               ,s.own
-          FROM ticker_history th
-    INNER JOIN symbol_hdr s
-            ON s.symbol = th.ticker
-         WHERE th.timestamp < ?
-           AND th.timestamp > ?
-           AND th.sroc is not null
-      GROUP BY th.ticker
-      ORDER BY th.sroc DESC
-         LIMIT ?
+            SELECT max(th.timestamp) timestamp
+                   ,th.ticker
+                   ,th.sroc
+                   ,s.own
+              FROM ticker_history th
+        INNER JOIN symbol_hdr s
+                ON s.symbol = th.ticker
+             WHERE th.timestamp < ?
+               AND th.timestamp > ?
+               AND th.sroc is not null
+          GROUP BY th.ticker
+          ORDER BY th.sroc DESC
+             LIMIT ?
          """, [max_ts, min_ts, limit]).fetchall()
         return result
     # except sqlite3.DatabaseError:
