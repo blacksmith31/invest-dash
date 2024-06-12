@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 import operator
 import polars as pl
 from typing import Dict, List
@@ -16,7 +16,7 @@ from backend.helpers import (
     ts_to_str, 
     score_round, 
 )
-from schemas.schemas import Symbol, TickerDayClose, TickerDayScore
+from schemas.schemas import Symbol, Ticker, TickerDayClose, TickerDayScore
 from config.settings import settings
 
 templates = Jinja2Blocks(settings.TEMPLATE_DIR)
@@ -60,6 +60,16 @@ async def chart_data(request: Request, ticker: str = ''):
                "ts_to_str": ts_to_str}
     return templates.TemplateResponse("chart.html",
                                       context)
+
+@router.put("/set_own/{ticker}", status_code=200)#, response_class=RedirectResponse)
+async def set_own(request: Request, ticker: str):
+    # if not ticker:
+    #     return 
+    print(f"set own ticker: {ticker}")
+    # db.update_symbol_own(ticker)
+
+    return 
+
 
 @router.get("/changes", status_code=200, response_class=HTMLResponse)
 async def changes(request: Request, limit:int=20, days:int=7, window:int=7):
