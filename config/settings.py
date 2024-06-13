@@ -9,7 +9,7 @@ APP_DIR = Path(__file__).resolve().parent.parent
 class Settings(BaseSettings):
     APP_DIR: Path = APP_DIR
     STATIC_DIR: Path = APP_DIR / "frontend/static"
-    TEMPLATE_DIR: Path = APP_DIR / "frontend/templates"
+    TEMPLATE_DIR: Path = APP_DIR / "templates"
     # DATA_DIR???
 
     FASTAPI_PROPERTIES: dict = {

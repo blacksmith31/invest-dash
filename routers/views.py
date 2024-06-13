@@ -6,6 +6,7 @@ import polars as pl
 from typing import Dict, List
 
 from jinja2_fragments.fastapi import Jinja2Blocks
+from polars.type_aliases import RowTotalsDefinition
 
 from backend import db
 from backend.helpers import (
@@ -16,7 +17,7 @@ from backend.helpers import (
     ts_to_str, 
     score_round, 
 )
-from schemas.schemas import Symbol, Ticker, TickerDayClose, TickerDayScore
+from schemas.schemas import Symbol, TickerDayClose, TickerDayScore
 from config.settings import settings
 
 templates = Jinja2Blocks(settings.TEMPLATE_DIR)
@@ -61,14 +62,16 @@ async def chart_data(request: Request, ticker: str = ''):
     return templates.TemplateResponse("chart.html",
                                       context)
 
-@router.put("/set_own/{ticker}", status_code=200)#, response_class=RedirectResponse)
+@router.put("/set_own/{ticker}", status_code=200, response_class=HTMLResponse)
 async def set_own(request: Request, ticker: str):
-    # if not ticker:
-    #     return 
     print(f"set own ticker: {ticker}")
-    # db.update_symbol_own(ticker)
-
-    return 
+    db.update_symbol_own(ticker)
+    row = db.select_ticker_own(ticker)
+    context = {"request": request,
+               "row": row,
+               "ts_to_datestr": ts_to_datestr,
+               "round": score_round}
+    return templates.TemplateResponse("tbl_ticker.html", context)
 
 
 @router.get("/changes", status_code=200, response_class=HTMLResponse)

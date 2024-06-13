@@ -28,28 +28,7 @@
 						<div class="rhdr">Owned</div>
 					</div>
 					{% for row in data %}
-					<div class="row rhover" 
-						hx-get="/views/chart_data" 
-						hx-trigger="click once"
-						hx-target=".chart-container" 
-						hx-vals='{"ticker": "{{ row.ticker }}"}'
-					>
-						<div class="rdata">{{ ts_to_datestr(row.timestamp) }}</div>
-						<div class="rdata">{{ row.ticker }}</div>
-						<div class="rdata">{{ round(row.sroc)}}</div>
-						<div class="rdata">
-							<input type="checkbox" 
-								{% if row.own %} 
-								checked 
-								{% endif %}
-							>
-						</div>
-						<div class="rdata">
-							<button 
-								hx-put="/views/set_own/{{ row.ticker }}" 
-							>Own</button>
-						</div>
-					</div>
+						{% include 'tbl_ticker.html' with context %}
 					{% endfor %}
 				</div>
 				{% endblock %}
