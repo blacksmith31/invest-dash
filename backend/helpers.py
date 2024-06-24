@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from datetime import datetime, timedelta
 import math
 from typing import List
@@ -32,6 +32,11 @@ def day_scores_compare(current: Sequence[TickerDay], previous: Sequence[TickerDa
     added = [item for item in current if item.ticker not in prev_tickers]
     removed = [item for item in previous if item.ticker not in curr_tickers]
     return added, removed
+
+def compare(base: Sequence[Mapping], base_key: str, relative: Sequence[Mapping], rel_key: str):
+    relative_ls = [item.get(rel_key, None) for item in relative]
+    delta = [item for item in base if item.get(base_key, None) not in relative_ls]
+    return delta
 
 def score_round(score: float):
     return round(score or 0, 2)

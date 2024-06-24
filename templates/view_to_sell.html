@@ -1,0 +1,22 @@
+<div id="owned-not-top">
+    <p id="table-title">Owned Not In Top</p>
+    <!-- <div class="table-container"> -->
+    <table>
+        <thead>
+            <tr>
+                <th>Symbol</th>
+                <th>Own</th>
+            </tr>
+        </thead>
+        <!-- <tbody hx-target="closest tr" hx-swap="outerHTML"> -->
+        <tbody hx-target="closest tr" hx-swap="outerHTML swap:0.5s">
+            {% for row in data %}
+                {% include 'to_sell_tbl.html' with context %}
+            {% endfor %}
+        </tbody>
+    </table>
+    <p>Add Owned Symbol</p>
+    <form hx-post="/views/owned" hx-target="#owned-not-top">
+        <label>Symbol<input name="symbol" type="text"></label>
+    </form>
+</div>

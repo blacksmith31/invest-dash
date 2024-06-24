@@ -1,15 +1,16 @@
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 import operator
 import polars as pl
-from typing import Dict, List
+from typing import Annotated, Dict, List
 
 from jinja2_fragments.fastapi import Jinja2Blocks
 from polars.type_aliases import RowTotalsDefinition
 
 from backend import db
 from backend.helpers import (
+    compare,
     day_scores_compare,
     dt_day_shift_ts,
     fmt_currency_word, 
@@ -102,6 +103,23 @@ async def changes(request: Request, limit:int=20, days:int=7, window:int=7):
     return templates.TemplateResponse("changes.html",
                                       context)
 
+@router.get("/to_sell", status_code=200, response_class=HTMLResponse)
+def view_to_sell(request: Request, window:int=7, limit:int=20):
+    owned = db.select_owned_symbols()
+    now = datetime.now() - timedelta(days=1)
+    current_ts = dt_day_shift_ts(now, 0)
+    min_ts = dt_day_shift_ts(now, -1 * (window + 1))
+    top = db.select_prev_days_scores_owned(limit, current_ts, min_ts)
+    delta = compare(owned, "symbol", top, "ticker")
+    context = {"request": request,
+               "data": delta}
+    return templates.TemplateResponse("view_to_sell.html", context)
+
+@router.delete("/sell/{ticker}", status_code=200)
+def sell(request: Request, ticker: str, window:int=7, limit:int=20):
+    db.update_symbol_own(ticker)
+    return
+
 @router.get("/symbols", status_code=200, response_class=HTMLResponse)
 def symbols_hdr(request: Request, limit:int=1000):
     data = db.view_symbol_hdr(limit=limit)
@@ -110,6 +128,22 @@ def symbols_hdr(request: Request, limit:int=1000):
                "data": data}
     return templates.TemplateResponse("view_symbol_hdr.html", context)
 
+@router.post("/owned", status_code=200, response_class=HTMLResponse)
+def add_own(request: Request, symbol: Annotated[str, Form()], window:int=7, limit:int=20):
+    all_symbols = db.select_top_symbols_mcap()
+    all_symbols = [row["symbol"] for row in all_symbols]
+    if symbol in all_symbols:
+        print(f"{symbol} FOUND IN ALL SYMBOLS")
+        db.update_symbol_own(symbol)
+    owned = db.select_owned_symbols()
+    now = datetime.now() - timedelta(days=1)
+    current_ts = dt_day_shift_ts(now, 0)
+    min_ts = dt_day_shift_ts(now, -1 * (window + 1))
+    top = db.select_prev_days_scores_owned(limit, current_ts, min_ts)
+    delta = compare(owned, "symbol", top, "ticker")
+    context = {"request": request,
+               "data": delta}
+    return templates.TemplateResponse("view_to_sell.html", context)
 
 @router.get("/view_scores", status_code=200, response_class=HTMLResponse)
 def view_daily_scores(request: Request, days: int = 7):

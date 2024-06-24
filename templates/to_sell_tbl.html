@@ -1,0 +1,10 @@
+<tr>
+    <td>{{ row["symbol"] }}</td>
+    <td>
+        <button class="btn btnown" 
+            hx-delete="/views/sell/{{ row['symbol'] }}" 
+        >
+            Own
+        </button>
+    </td>
+</tr>

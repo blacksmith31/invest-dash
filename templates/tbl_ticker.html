@@ -11,7 +11,8 @@
     <div class="rdata">
         <button class="btn {{'btnown' if row.own }}" 
             hx-put="/views/set_own/{{ row.ticker }}" 
-            hx-target="closest .rhover">
+            hx-target="closest .rhover"
+            hx-swap="outerHTML">
             Own
         </button>
     </div>

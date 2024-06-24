@@ -168,6 +168,15 @@ def select_ticker_own(ticker: str):
         """, [ticker]).fetchone()
         return result
 
+def select_owned_symbols():
+    with con:
+        owned = con.execute("""
+            SELECT symbol
+              FROM symbol_hdr
+             WHERE own = 1
+        """).fetchall()
+        return owned
+
 def select_max_ticker_ts(ticker: str) -> dict[str, int]:
     with con:
         result = con.execute("""

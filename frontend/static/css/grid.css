@@ -8,7 +8,7 @@ body {
 .wrapper {
     display: grid;
     grid-template-columns: 1fr 2fr;
-    grid-auto-rows: 650px;
+    grid-auto-rows: 700px;
     gap: 10px;
 }
 
@@ -79,7 +79,7 @@ body {
     border-radius: 3px;
     padding: 0 5px;
     border-radius: 4px;
-    color: white;
+    color: gray;
     background: transparent;
     line-height: 1.15;
     font-size: 10px;
@@ -89,7 +89,7 @@ body {
     text-decoration: none;
     text-transform: uppercase;
     min-width: 50px;
-    border: 1px solid white;
+    border: 1px solid gray;
     text-align: center;
     transition: background 280ms cubic-bezier(0.4, 0, 0.2, 1);
     :hover {
@@ -108,3 +108,9 @@ body {
         box-shadow: 0px 2px 4px -1px rgb(0 0 0 / 20%), 0px 4px 5px 0px rgb(0 0 0 / 14%), 0px 1px 10px 0px rgb(0 0 0 / 12%);
     }
 }
+
+tr.htmx-swapping td {
+    opacity: 0;
+    transition: opacity 0.5s ease-out;
+}
+
