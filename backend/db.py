@@ -346,10 +346,15 @@ def update_symbol_own(symbol: str):
     with con:
         con.execute("""
                     update symbol_hdr
-                    set own = CASE own
-                        WHEN 1 THEN 0
-                        ELSE 1
-                        END
+                    set own = 1                    
+                    WHERE symbol = ?;
+                    """, [symbol])
+
+def update_symbol_not_own(symbol: str):
+    with con:
+        con.execute("""
+                    update symbol_hdr
+                    set own = 0
                     WHERE symbol = ?;
                     """, [symbol])
 

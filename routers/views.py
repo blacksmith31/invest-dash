@@ -28,13 +28,17 @@ router = APIRouter(
     tags=["views"]
 )
 
-
-@router.get("/main", status_code=200, response_class=HTMLResponse)
-async def root(request:Request, window:int=7, limit:int=20):
+def top_symbols(window:int=7, limit:int=20):
     now = datetime.now() - timedelta(days=1)
     current_ts = dt_day_shift_ts(now, 0)
     min_ts = dt_day_shift_ts(now, -1 * (window + 1))
     data = db.select_prev_days_scores_owned(limit, current_ts, min_ts)
+    return data
+
+
+@router.get("/main", status_code=200, response_class=HTMLResponse)
+async def root(request:Request, window:int=7, limit:int=20):
+    data = top_symbols(window=window, limit=limit)
     context = {"request": request,
                "data": data,
                "ts_to_datestr": ts_to_datestr,
@@ -65,9 +69,14 @@ async def chart_data(request: Request, ticker: str = ''):
 
 @router.put("/set_own/{ticker}", status_code=200, response_class=HTMLResponse)
 async def set_own(request: Request, ticker: str):
-    print(f"set own ticker: {ticker}")
-    db.update_symbol_own(ticker)
     row = db.select_ticker_own(ticker)
+    print(f"set own ticker row: {row}")
+    if row["own"] == 1:
+        db.update_symbol_not_own(ticker)
+        row["own"] = 0
+    else:
+        db.update_symbol_own(ticker)
+        row["own"] = 1
     context = {"request": request,
                "row": row,
                "ts_to_datestr": ts_to_datestr,
@@ -79,8 +88,7 @@ async def set_own(request: Request, ticker: str):
 async def changes(request: Request, limit:int=20, days:int=7, window:int=7):
     now = datetime.now() - timedelta(days=1)
     current_ts = dt_day_shift_ts(now, 0)
-    min_ts = dt_day_shift_ts(now, -1 * (window + 1))
-    current_list = db.select_prev_days_scores(limit=limit, max_ts=current_ts, min_ts=min_ts)
+    current_list = top_symbols(window=window, limit=limit)
     current_list = [TickerDayScore.model_validate(day) for day in current_list]
     added = []
     removed = []
@@ -106,18 +114,15 @@ async def changes(request: Request, limit:int=20, days:int=7, window:int=7):
 @router.get("/to_sell", status_code=200, response_class=HTMLResponse)
 def view_to_sell(request: Request, window:int=7, limit:int=20):
     owned = db.select_owned_symbols()
-    now = datetime.now() - timedelta(days=1)
-    current_ts = dt_day_shift_ts(now, 0)
-    min_ts = dt_day_shift_ts(now, -1 * (window + 1))
-    top = db.select_prev_days_scores_owned(limit, current_ts, min_ts)
+    top = top_symbols(window=window, limit=limit)
     delta = compare(owned, "symbol", top, "ticker")
     context = {"request": request,
                "data": delta}
     return templates.TemplateResponse("view_to_sell.html", context)
 
-@router.delete("/sell/{ticker}", status_code=200)
-def sell(request: Request, ticker: str, window:int=7, limit:int=20):
-    db.update_symbol_own(ticker)
+@router.post("/sell/{ticker}", status_code=200)
+def sell(request: Request, ticker: str):
+    db.update_symbol_not_own(ticker)
     return
 
 @router.get("/symbols", status_code=200, response_class=HTMLResponse)
@@ -130,16 +135,14 @@ def symbols_hdr(request: Request, limit:int=1000):
 
 @router.post("/owned", status_code=200, response_class=HTMLResponse)
 def add_own(request: Request, symbol: Annotated[str, Form()], window:int=7, limit:int=20):
+    symbol = symbol.upper()
     all_symbols = db.select_top_symbols_mcap()
     all_symbols = [row["symbol"] for row in all_symbols]
     if symbol in all_symbols:
         print(f"{symbol} FOUND IN ALL SYMBOLS")
         db.update_symbol_own(symbol)
     owned = db.select_owned_symbols()
-    now = datetime.now() - timedelta(days=1)
-    current_ts = dt_day_shift_ts(now, 0)
-    min_ts = dt_day_shift_ts(now, -1 * (window + 1))
-    top = db.select_prev_days_scores_owned(limit, current_ts, min_ts)
+    top = top_symbols(window=window, limit=limit)
     delta = compare(owned, "symbol", top, "ticker")
     context = {"request": request,
                "data": delta}
